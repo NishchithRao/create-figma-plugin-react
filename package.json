@@ -33,6 +33,7 @@
     "@typescript-eslint/eslint-plugin": "6.13.2",
     "concurrently": "8.2.2",
     "cpy-cli": "5.0.0",
+    "esbuild": "^0.19.10",
     "eslint": "8.55.0",
     "eslint-config-yuanqing": "0.0.9",
     "eslint-plugin-import": "2.29.0",
@@ -47,6 +48,8 @@
     "npm-check-updates": "16.14.11",
     "path-exists": "5.0.0",
     "prettier": "3.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "rimraf": "5.0.5",
     "simple-git-hooks": "2.9.0",
     "sirv-cli": "2.0.2",
@@ -55,13 +58,6 @@
     "tsx": "4.6.2",
     "turbo": "1.11.1",
     "typescript": "5.3.3"
-  },
-  "eslintConfig": {
-    "extends": "eslint-config-yuanqing",
-    "root": true,
-    "env": {
-      "node": true
-    }
   },
   "lint-staged": {
     "*.{js,ts,tsx}": [
@@ -81,5 +77,11 @@
   },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "esbuild-sass-plugin": "^2.16.1",
+    "vite": "^5.0.10",
+    "vite-plugin-dts": "^3.6.4"
+  }
 }
