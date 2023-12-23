@@ -1,8 +1,11 @@
-import { RefObject } from 'preact'
+import { MutableRefObject } from 'react'
 
-export function getCurrentFromRef<R>(ref: RefObject<R>): R {
+export function getCurrentFromRef<R>(
+  ref: MutableRefObject<R | null>
+): R | null {
   if (ref.current === null) {
-    throw new Error('`ref.current` is `undefined`')
+    console.warn('`ref.current` is `undefined`')
+    return null
   }
   return ref.current
 }

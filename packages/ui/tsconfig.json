@@ -1,13 +1,16 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "jsx": "react",
-    "jsxFactory": "h",
+    "jsx": "react-jsx",
     "lib": ["DOM", "ES2020"],
     "outDir": "lib",
+    "declarationDir": "lib",
+    "emitDeclarationOnly": true,
+    "declaration": true,
     "rootDir": "src",
-    "types": []
+    "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src"],
+  "exclude": ["src/**/*.stories.tsx", "node_modules", "../../node_modules"],
   "references": [{ "path": "../utilities" }]
 }

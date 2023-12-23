@@ -1,16 +1,15 @@
-import { ComponentChild, ComponentChildren, h, toChildArray } from 'preact'
+import { Children, forwardRef } from 'react'
 
 import { Space } from '../../types/space.js'
-import { createComponent } from '../../utilities/create-component.js'
 import styles from './inline.module.css'
 
 export type InlineProps = {
-  children: ComponentChildren
+  children: React.ReactElement[]
   space?: InlineSpace
 }
 export type InlineSpace = Space
 
-export const Inline = createComponent<HTMLDivElement, InlineProps>(function (
+export const Inline = forwardRef<HTMLDivElement, InlineProps>(function (
   { children, space, ...rest },
   ref
 ) {
@@ -18,14 +17,11 @@ export const Inline = createComponent<HTMLDivElement, InlineProps>(function (
     <div
       {...rest}
       ref={ref}
-      class={typeof space === 'undefined' ? undefined : styles[space]}
+      className={typeof space === 'undefined' ? undefined : styles[space]}
     >
-      {toChildArray(children).map(function (
-        child: ComponentChild,
-        index: number
-      ) {
+      {Children.map(children, function (child, index: number) {
         return (
-          <div key={index} class={styles.child}>
+          <div key={index} className={styles.child}>
             {child}
           </div>
         )

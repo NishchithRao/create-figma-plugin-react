@@ -1,12 +1,10 @@
-import { ComponentChildren, h } from 'preact'
-import { useCallback } from 'preact/hooks'
-
 import { Event, EventHandler } from '../../types/event-handler.js'
+import { forwardRef, useCallback } from 'react'
+
 import { FocusableComponentProps } from '../../types/focusable-component-props.js'
-import { createClassName } from '../../utilities/create-class-name.js'
-import { createComponent } from '../../utilities/create-component.js'
-import { noop } from '../../utilities/no-op.js'
 import { ITEM_ID_DATA_ATTRIBUTE_NAME } from '../../utilities/private/constants.js'
+import { createClassName } from '../../utilities/create-class-name.js'
+import { noop } from '../../utilities/no-op.js'
 import styles from './segmented-control.module.css'
 
 export interface SegmentedControlProps
@@ -19,11 +17,11 @@ export interface SegmentedControlProps
 }
 export type SegmentedControlOption = {
   disabled?: boolean
-  children?: ComponentChildren
+  children?: React.ReactNode
   value: string
 }
 
-export const SegmentedControl = createComponent<
+export const SegmentedControl = forwardRef<
   HTMLInputElement,
   SegmentedControlProps
 >(function ({
@@ -41,9 +39,9 @@ export const SegmentedControl = createComponent<
       onChange(event)
       const id = event.currentTarget.getAttribute(ITEM_ID_DATA_ATTRIBUTE_NAME)
       if (id === null) {
-        throw new Error('`id` is `null`')
+        console.warn('`id` is `null`')
       }
-      const newValue = options[parseInt(id, 10)].value
+      const newValue = options[parseInt(id || '0', 10)].value
       onValueChange(newValue)
     },
     [onChange, onValueChange, options]
@@ -64,12 +62,12 @@ export const SegmentedControl = createComponent<
 
   return (
     <div
-      class={createClassName([
+      className={createClassName([
         styles.segmentedControl,
         disabled === true ? styles.disabled : null
       ])}
     >
-      <div class={styles.labels}>
+      <div className={styles.labels}>
         {options.map(function (option: SegmentedControlOption, index: number) {
           const children =
             typeof option.children === 'undefined'
@@ -77,11 +75,11 @@ export const SegmentedControl = createComponent<
               : option.children
           const isOptionDisabled = disabled === true || option.disabled === true
           return (
-            <label key={index} class={styles.label}>
+            <label key={index} className={styles.label}>
               <input
                 {...rest}
                 checked={value === option.value}
-                class={styles.input}
+                className={styles.input}
                 disabled={isOptionDisabled === true}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
@@ -90,9 +88,11 @@ export const SegmentedControl = createComponent<
                 value={`${option.value}`}
                 {...{ [ITEM_ID_DATA_ATTRIBUTE_NAME]: `${index}` }}
               />
-              <div class={styles.children}>
+              <div className={styles.children}>
                 <div
-                  class={typeof children === 'string' ? styles.text : undefined}
+                  className={
+                    typeof children === 'string' ? styles.text : undefined
+                  }
                 >
                   {children}
                 </div>
@@ -101,7 +101,7 @@ export const SegmentedControl = createComponent<
           )
         })}
       </div>
-      <div class={styles.border} />
+      <div className={styles.border} />
     </div>
   )
 })

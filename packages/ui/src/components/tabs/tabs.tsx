@@ -1,11 +1,9 @@
-import { ComponentChildren, Fragment, h } from 'preact'
-import { useCallback } from 'preact/hooks'
-
 import { Event, EventHandler } from '../../types/event-handler.js'
+import { Fragment, forwardRef, useCallback } from 'react'
+
 import { FocusableComponentProps } from '../../types/focusable-component-props.js'
-import { createComponent } from '../../utilities/create-component.js'
-import { noop } from '../../utilities/no-op.js'
 import { ITEM_ID_DATA_ATTRIBUTE_NAME } from '../../utilities/private/constants.js'
+import { noop } from '../../utilities/no-op.js'
 import styles from './tabs.module.css'
 
 export interface TabsProps extends FocusableComponentProps<HTMLDivElement> {
@@ -15,11 +13,11 @@ export interface TabsProps extends FocusableComponentProps<HTMLDivElement> {
   value: null | string
 }
 export type TabsOption = {
-  children: ComponentChildren
+  children: React.ReactNode
   value: string
 }
 
-export const Tabs = createComponent<HTMLDivElement, TabsProps>(function (
+export const Tabs = forwardRef<HTMLDivElement, TabsProps>(function (
   {
     onChange = noop,
     onKeyDown = noop,
@@ -36,9 +34,9 @@ export const Tabs = createComponent<HTMLDivElement, TabsProps>(function (
       onChange(event)
       const id = event.currentTarget.getAttribute(ITEM_ID_DATA_ATTRIBUTE_NAME)
       if (id === null) {
-        throw new Error('`id` is `null`')
+        console.warn('`id` is `null`')
       }
-      const newValue = options[parseInt(id, 10)].value
+      const newValue = options[parseInt(id || '0', 10)].value
       onValueChange(newValue)
     },
     [onChange, onValueChange, options]
@@ -63,14 +61,14 @@ export const Tabs = createComponent<HTMLDivElement, TabsProps>(function (
 
   return (
     <Fragment>
-      <div ref={ref} class={styles.tabs}>
+      <div ref={ref} className={styles.tabs}>
         {options.map(function (option: TabsOption, index: number) {
           return (
-            <label key={index} class={styles.label}>
+            <label key={index} className={styles.label}>
               <input
                 {...rest}
                 checked={value === option.value}
-                class={styles.input}
+                className={styles.input}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
                 tabIndex={0}
@@ -78,13 +76,13 @@ export const Tabs = createComponent<HTMLDivElement, TabsProps>(function (
                 value={option.value}
                 {...{ [ITEM_ID_DATA_ATTRIBUTE_NAME]: `${index}` }}
               />
-              <div class={styles.value}>{option.value}</div>
+              <div className={styles.value}>{option.value}</div>
             </label>
           )
         })}
       </div>
       {typeof activeOption === 'undefined' ? null : (
-        <div class={styles.children}>{activeOption.children}</div>
+        <div className={styles.children}>{activeOption.children}</div>
       )}
     </Fragment>
   )

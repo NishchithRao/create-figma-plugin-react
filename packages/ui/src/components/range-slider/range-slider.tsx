@@ -1,10 +1,8 @@
-import { h } from 'preact'
-import { useCallback } from 'preact/hooks'
-
 import { Event, EventHandler } from '../../types/event-handler.js'
+import { forwardRef, useCallback } from 'react'
+
 import { FocusableComponentProps } from '../../types/focusable-component-props.js'
 import { createClassName } from '../../utilities/create-class-name.js'
-import { createComponent } from '../../utilities/create-component.js'
 import { noop } from '../../utilities/no-op.js'
 import styles from './range-slider.module.css'
 
@@ -20,7 +18,7 @@ export interface RangeSliderProps
   value: string
 }
 
-export const RangeSlider = createComponent<HTMLInputElement, RangeSliderProps>(
+export const RangeSlider = forwardRef<HTMLInputElement, RangeSliderProps>(
   function (
     {
       disabled = false,
@@ -38,7 +36,7 @@ export const RangeSlider = createComponent<HTMLInputElement, RangeSliderProps>(
     ref
   ) {
     if (minimum >= maximum) {
-      throw new Error('`minimum` must be less than `maximum`')
+      console.warn('`minimum` must be less than `maximum`')
     }
 
     const handleInput = useCallback(
@@ -66,7 +64,7 @@ export const RangeSlider = createComponent<HTMLInputElement, RangeSliderProps>(
 
     return (
       <label
-        class={createClassName([
+        className={createClassName([
           styles.rangeSlider,
           disabled === true ? styles.disabled : null
         ])}
@@ -74,7 +72,7 @@ export const RangeSlider = createComponent<HTMLInputElement, RangeSliderProps>(
         <input
           {...rest}
           ref={ref}
-          class={styles.input}
+          className={styles.input}
           disabled={disabled}
           max={maximum}
           min={minimum}
@@ -84,7 +82,7 @@ export const RangeSlider = createComponent<HTMLInputElement, RangeSliderProps>(
           type="range"
           value={value}
         />
-        <div class={styles.border} />
+        <div className={styles.border} />
       </label>
     )
   }

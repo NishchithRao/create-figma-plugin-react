@@ -1,30 +1,35 @@
-import { ComponentChildren, h, RefObject } from 'preact'
-import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
-
-import menuStyles from '../../../css/menu.module.css'
-import { useMouseDownOutside } from '../../../hooks/use-mouse-down-outside.js'
-import { IconMenuCheckmarkChecked16 } from '../../../icons/icon-16/icon-menu-checkmark-checked-16.js'
 import { Event, EventHandler } from '../../../types/event-handler.js'
-import { createClassName } from '../../../utilities/create-class-name.js'
-import { createComponent } from '../../../utilities/create-component.js'
-import { getCurrentFromRef } from '../../../utilities/get-current-from-ref.js'
-import { noop } from '../../../utilities/no-op.js'
 import {
   INVALID_ID,
   ITEM_ID_DATA_ATTRIBUTE_NAME,
   VIEWPORT_MARGIN
 } from '../../../utilities/private/constants.js'
+import {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from 'react'
+
+import { IconMenuCheckmarkChecked16 } from '../../../icons/icon-16/icon-menu-checkmark-checked-16.js'
 import { computeNextValue } from '../private/compute-next-value.js'
+import { createClassName } from '../../../utilities/create-class-name.js'
+import { forwardRef } from 'react'
+import { getCurrentFromRef } from '../../../utilities/get-current-from-ref.js'
 import { isKeyCodeCharacterGenerating } from '../private/is-keycode-character-generating.js'
-import textboxStyles from '../textbox/textbox.module.css'
+import menuStyles from '../../../css/menu.module.css'
+import { noop } from '../../../utilities/no-op.js'
 import textboxAutocompleteStyles from './textbox-autocomplete.module.css'
+import textboxStyles from '../textbox/textbox.module.css'
+import { useMouseDownOutside } from '../../../hooks/use-mouse-down-outside.js'
 
 const EMPTY_STRING = ''
 
 export interface TextboxAutocompleteProps {
   disabled?: boolean
   filter?: boolean
-  icon?: ComponentChildren
+  icon?: string | JSX.Element
   onChange?: EventHandler.onChange<HTMLInputElement>
   onInput?: EventHandler.onInput<HTMLInputElement>
   onKeyDown?: EventHandler.onKeyDown<HTMLInputElement>
@@ -64,7 +69,7 @@ type OptionValueWithId = TextboxAutocompleteOptionValue & {
 }
 type Id = typeof INVALID_ID | string
 
-export const TextboxAutocomplete = createComponent<
+export const TextboxAutocomplete = forwardRef<
   HTMLInputElement,
   TextboxAutocompleteProps
 >(function (
@@ -91,14 +96,15 @@ export const TextboxAutocomplete = createComponent<
   ref
 ) {
   if (typeof icon === 'string' && icon.length !== 1) {
-    throw new Error(`String \`icon\` must be a single character: ${icon}`)
+    console.warn(`String \`icon\` must be a single character: ${icon}`)
   }
 
-  const rootElementRef: RefObject<HTMLDivElement> = useRef(null)
-  const inputElementRef: RefObject<HTMLInputElement> = useRef(null)
-  const menuElementRef: RefObject<HTMLDivElement> = useRef(null)
+  const rootElementRef = useRef<HTMLDivElement>(null)
+  const inputElementRef: MutableRefObject<HTMLInputElement | null> =
+    useRef<HTMLInputElement>(null)
+  const menuElementRef = useRef<HTMLDivElement>(null)
 
-  const revertOnEscapeKeyDownRef: RefObject<boolean> = useRef(false) // Set to `true` when the `Escape` key is pressed; used to bail out of `handleTextboxInput`
+  const revertOnEscapeKeyDownRef = useRef(false) // Set to `true` when the `Escape` key is pressed; used to bail out of `handleTextboxInput`
 
   const [originalValue, setOriginalValue] = useState<string>(value) // Value of the textbox when the menu is focused
   const [editedValue, setEditedValue] = useState<string>(EMPTY_STRING) // Value being edited that does not match any of the options
@@ -116,36 +122,40 @@ export const TextboxAutocomplete = createComponent<
   // ])
 
   const triggerTextboxSelect = useCallback(function () {
-    getCurrentFromRef(inputElementRef).select()
+    getCurrentFromRef(inputElementRef)?.select()
   }, [])
 
   const triggerTextboxBlur = useCallback(function () {
-    getCurrentFromRef(inputElementRef).blur()
+    getCurrentFromRef(inputElementRef)?.blur()
   }, [])
 
   const triggerMenuUpdateScrollPosition = useCallback(function (id: Id) {
     // Adjust the menu scroll position so that the selected option is always visible
     const menuElement = getCurrentFromRef(menuElementRef)
-    if (id === INVALID_ID) {
+    if (id === INVALID_ID && menuElement) {
       menuElement.scrollTop = 0
       return
     }
-    const selectedElement = menuElement.querySelector<HTMLDivElement>(
+    const selectedElement = menuElement?.querySelector<HTMLDivElement>(
       `[${ITEM_ID_DATA_ATTRIBUTE_NAME}='${id}']`
     )
     if (selectedElement === null) {
-      throw new Error('`selectedElement` is `null`')
+      console.warn('`selectedElement` is `null`')
     }
     const y =
-      selectedElement.getBoundingClientRect().y -
-      menuElement.getBoundingClientRect().y
-    if (y < menuElement.scrollTop) {
+      (selectedElement?.getBoundingClientRect().y || 0) -
+      (menuElement?.getBoundingClientRect().y || 0)
+    if (menuElement && y < (menuElement?.scrollTop || 0)) {
       menuElement.scrollTop = y
       return
     }
-    const offsetBottom = y + selectedElement.offsetHeight
-    if (offsetBottom > menuElement.scrollTop + menuElement.offsetHeight) {
-      menuElement.scrollTop = offsetBottom - menuElement.offsetHeight
+    const offsetBottom = y + (selectedElement?.offsetHeight || 0)
+    if (
+      menuElement &&
+      offsetBottom >
+        (menuElement?.scrollTop || 0) + (menuElement?.offsetHeight || 0)
+    ) {
+      menuElement.scrollTop = offsetBottom - (menuElement?.offsetHeight || 0)
     }
   }, [])
 
@@ -161,14 +171,15 @@ export const TextboxAutocomplete = createComponent<
     [options, triggerMenuUpdateScrollPosition]
   )
 
-  const updateTextboxValue = useCallback(function (value: string) {
+  const updateTextboxValue = useCallback(function (value?: string) {
+    if (!value) return
     const inputElement = getCurrentFromRef(inputElementRef)
-    inputElement.value = value
+    if (inputElement) inputElement.value = value
     const inputEvent = new window.Event('input', {
       bubbles: true,
       cancelable: true
     })
-    inputElement.dispatchEvent(inputEvent)
+    if (inputElement) inputElement.dispatchEvent(inputEvent)
   }, [])
 
   const triggerMenuHide = useCallback(function () {
@@ -237,10 +248,10 @@ export const TextboxAutocomplete = createComponent<
         setSelectedId(id)
         const optionValue = findOptionValueById(options, id)
         if (optionValue === null) {
-          throw new Error('`optionValue` is `null`')
+          console.warn('`optionValue` is `null`')
         }
         // Imperatively set the textbox value
-        updateTextboxValue(optionValue.value)
+        updateTextboxValue(optionValue?.value)
         triggerTextboxSelect()
         triggerMenuUpdateScrollPosition(id)
         return
@@ -334,7 +345,7 @@ export const TextboxAutocomplete = createComponent<
         return
       }
       if (event.clipboardData === null) {
-        throw new Error('`event.clipboardData` is `null`')
+        console.warn('`event.clipboardData` is `null`')
       }
       const nextValue = computeNextValue(
         event.currentTarget,
@@ -353,17 +364,17 @@ export const TextboxAutocomplete = createComponent<
       onChange(event)
       const id = event.currentTarget.getAttribute(ITEM_ID_DATA_ATTRIBUTE_NAME)
       if (id === null) {
-        throw new Error('`id` is `null`')
+        console.warn('`id` is `null`')
       }
       // Set the selected option to `id`
       setSelectedId(id)
       const optionValue = findOptionValueById(options, id)
       if (optionValue === null) {
-        throw new Error('`optionValue` is `null`')
+        console.warn('`optionValue` is `null`')
       }
       // Imperatively set the textbox value; the new value will eventually
       // reach `handleTextboxInput`
-      updateTextboxValue(optionValue.value)
+      updateTextboxValue(optionValue?.value)
       // Select the textbox, then hide the menu
       triggerTextboxSelect()
       triggerMenuHide()
@@ -382,7 +393,7 @@ export const TextboxAutocomplete = createComponent<
       // Set the selected option to the one being moused over
       const id = event.currentTarget.getAttribute(ITEM_ID_DATA_ATTRIBUTE_NAME)
       if (id === null) {
-        throw new Error('`id` is `null`')
+        console.warn('`id` is `null`')
       }
       if (id === selectedId) {
         return
@@ -426,7 +437,7 @@ export const TextboxAutocomplete = createComponent<
 
   const refCallback = useCallback(
     function (inputElement: null | HTMLInputElement) {
-      inputElementRef.current = inputElement
+      if (inputElementRef) inputElementRef.current = inputElement
       if (ref === null) {
         return
       }
@@ -442,7 +453,7 @@ export const TextboxAutocomplete = createComponent<
   return (
     <div
       ref={rootElementRef}
-      class={createClassName([
+      className={createClassName([
         textboxStyles.textbox,
         typeof variant === 'undefined'
           ? null
@@ -453,32 +464,32 @@ export const TextboxAutocomplete = createComponent<
         disabled === true ? textboxStyles.disabled : null
       ])}
     >
-      <div class={textboxStyles.inner}>
+      <div className={textboxStyles.inner}>
         <input
           {...rest}
           ref={refCallback}
-          class={textboxStyles.input}
+          className={textboxStyles.input}
           disabled={disabled === true}
           onInput={handleTextboxInput}
           onKeyDown={handleTextboxKeyDown}
           onMouseDown={handleTextboxMouseDown}
           onPaste={handleTextboxPaste}
           placeholder={placeholder}
-          spellcheck={spellCheck}
+          spellCheck={spellCheck}
           tabIndex={0}
           type="text"
           value={value}
         />
         {typeof icon === 'undefined' ? null : (
-          <div class={textboxStyles.icon}>{icon}</div>
+          <div className={textboxStyles.icon}>{icon}</div>
         )}
-        <div class={textboxStyles.border} />
+        <div className={textboxStyles.border} />
         {variant === 'underline' ? (
-          <div class={textboxStyles.underline} />
+          <div className={textboxStyles.underline} />
         ) : null}
         <div
           ref={menuElementRef}
-          class={createClassName([
+          className={createClassName([
             menuStyles.menu,
             disabled === true || isMenuVisible === false
               ? menuStyles.hidden
@@ -490,11 +501,11 @@ export const TextboxAutocomplete = createComponent<
         >
           {options.map(function (option: Option, index: number) {
             if (typeof option === 'string') {
-              return <hr key={index} class={menuStyles.optionSeparator} />
+              return <hr key={index} className={menuStyles.optionSeparator} />
             }
             if ('header' in option) {
               return (
-                <h1 key={index} class={menuStyles.optionHeader}>
+                <h1 key={index} className={menuStyles.optionHeader}>
                   {option.header}
                 </h1>
               )
@@ -502,7 +513,7 @@ export const TextboxAutocomplete = createComponent<
             return (
               <label
                 key={index}
-                class={createClassName([
+                className={createClassName([
                   menuStyles.optionValue,
                   option.disabled === true
                     ? menuStyles.optionValueDisabled
@@ -514,7 +525,7 @@ export const TextboxAutocomplete = createComponent<
               >
                 <input
                   checked={value === option.value}
-                  class={menuStyles.input}
+                  className={menuStyles.input}
                   disabled={option.disabled === true}
                   // If clicked on an unselected element, set the value
                   onChange={
@@ -529,7 +540,7 @@ export const TextboxAutocomplete = createComponent<
                   {...{ [ITEM_ID_DATA_ATTRIBUTE_NAME]: option.id }}
                 />
                 {option.value === originalValue ? ( // Show check icon if option matches `originalValue`
-                  <div class={menuStyles.checkIcon}>
+                  <div className={menuStyles.checkIcon}>
                     <IconMenuCheckmarkChecked16 />
                   </div>
                 ) : null}
@@ -631,7 +642,7 @@ function isValidValue(options: Array<Option>, value: string): boolean {
 // Returns the `OptionValueWithId` in `options` with the given `id`, else `null`
 function findOptionValueById(
   options: Array<Option>,
-  id: string
+  id: string | null
 ): null | OptionValueWithId {
   for (const option of options) {
     if (typeof option !== 'string' && 'id' in option && option.id === id) {
@@ -661,7 +672,7 @@ function computePreviousId(options: Array<Option>, id: Id): Id {
   }
   const index = getIndexById(options, id)
   if (index === -1) {
-    throw new Error(`No option with \`id\` ${id}`)
+    console.warn(`No option with \`id\` ${id}`)
   }
   if (index === 0) {
     return null
@@ -678,7 +689,7 @@ function computeNextId(options: Array<Option>, id: Id): Id {
   }
   const index = getIndexById(options, id)
   if (index === -1) {
-    throw new Error(`No option with \`id\` ${id}`)
+    console.warn(`No option with \`id\` ${id}`)
   }
   if (index === options.length - 1) {
     return null
@@ -693,10 +704,10 @@ function findOptionValueAtOrBeforeIndex(
   index: number
 ): null | OptionValueWithId {
   if (index < 0) {
-    throw new Error('`index` < 0')
+    console.warn('`index` < 0')
   }
   if (index > options.length - 1) {
-    throw new Error('`index` > `options.length` - 1')
+    console.warn('`index` > `options.length` - 1')
   }
   return findLastOptionValue(options.slice(0, index + 1))
 }
@@ -707,10 +718,10 @@ function findOptionValueAtOrAfterIndex(
   index: number
 ): null | OptionValueWithId {
   if (index < 0) {
-    throw new Error('`index` < 0')
+    console.warn('`index` < 0')
   }
   if (index > options.length - 1) {
-    throw new Error('`index` > `options.length` - 1')
+    console.warn('`index` > `options.length` - 1')
   }
   return findFirstOptionValue(options.slice(index))
 }
@@ -737,17 +748,17 @@ function findLastOptionValue(options: Array<Option>): null | OptionValueWithId {
 }
 
 function updateMenuElementMaxHeight(
-  rootElement: HTMLDivElement,
-  menuElement: HTMLDivElement,
+  rootElement: HTMLDivElement | null,
+  menuElement: HTMLDivElement | null,
   top: boolean
 ) {
-  const rootElementTop = rootElement.getBoundingClientRect().top
+  const rootElementTop = rootElement?.getBoundingClientRect().top || 0
   const maxHeight =
     top === true
       ? rootElementTop - VIEWPORT_MARGIN
       : window.innerHeight -
         rootElementTop -
-        rootElement.offsetHeight -
+        (rootElement?.offsetHeight || 0) -
         VIEWPORT_MARGIN
-  menuElement.style.maxHeight = `${maxHeight}px`
+  if (menuElement) menuElement.style.maxHeight = `${maxHeight}px`
 }

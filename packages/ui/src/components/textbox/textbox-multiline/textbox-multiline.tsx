@@ -1,14 +1,18 @@
-import { MIXED_STRING } from '@create-figma-plugin/utilities'
-import { h, RefObject } from 'preact'
-import { useCallback, useRef, useState } from 'preact/hooks'
-
 import { Event, EventHandler } from '../../../types/event-handler.js'
+import {
+  MutableRefObject,
+  forwardRef,
+  useCallback,
+  useRef,
+  useState
+} from 'react'
+
 import { FocusableComponentProps } from '../../../types/focusable-component-props.js'
+import { MIXED_STRING } from '@create-figma-plugin/utilities'
 import { createClassName } from '../../../utilities/create-class-name.js'
-import { createComponent } from '../../../utilities/create-component.js'
 import { getCurrentFromRef } from '../../../utilities/get-current-from-ref.js'
-import { noop } from '../../../utilities/no-op.js'
 import { isKeyCodeCharacterGenerating } from '../private/is-keycode-character-generating.js'
+import { noop } from '../../../utilities/no-op.js'
 import styles from './textbox-multiline.module.css'
 
 const EMPTY_STRING = ''
@@ -33,7 +37,7 @@ export interface TextboxMultilineProps
 
 export type TextboxMultilineVariant = 'border' | 'underline'
 
-export const TextboxMultiline = createComponent<
+export const TextboxMultiline = forwardRef<
   HTMLTextAreaElement,
   TextboxMultilineProps
 >(function (
@@ -58,12 +62,14 @@ export const TextboxMultiline = createComponent<
   },
   ref
 ) {
-  const textAreaElementRef: RefObject<HTMLTextAreaElement> = useRef(null)
+  const textAreaElementRef: MutableRefObject<HTMLTextAreaElement | null> =
+    useRef<HTMLTextAreaElement>(null)
 
   const [originalValue, setOriginalValue] = useState(EMPTY_STRING) // Value of the textbox when it was initially focused
 
   const setTextAreaElementValue = useCallback(function (value: string) {
     const textAreaElement = getCurrentFromRef(textAreaElementRef)
+    if (!textAreaElement) return
     textAreaElement.value = value
     const inputEvent = new window.Event('input', {
       bubbles: true,
@@ -177,7 +183,7 @@ export const TextboxMultiline = createComponent<
 
   return (
     <div
-      class={createClassName([
+      className={createClassName([
         styles.textboxMultiline,
         typeof variant === 'undefined'
           ? null
@@ -189,14 +195,14 @@ export const TextboxMultiline = createComponent<
       ])}
     >
       {grow === true ? (
-        <div class={styles.ghost}>
+        <div className={styles.ghost}>
           {value === MIXED_STRING ? 'Mixed' : `${value} `}
         </div>
       ) : null}
       <textarea
         {...rest}
         ref={refCallback}
-        class={styles.textarea}
+        className={styles.textarea}
         disabled={disabled === true}
         onBlur={handleBlur}
         onFocus={handleFocus}
@@ -205,12 +211,12 @@ export const TextboxMultiline = createComponent<
         onMouseDown={handleMouseDown}
         placeholder={placeholder}
         rows={rows}
-        spellcheck={spellCheck}
+        spellCheck={spellCheck}
         tabIndex={0}
         value={value === MIXED_STRING ? 'Mixed' : value}
       />
-      <div class={styles.border} />
-      {variant === 'underline' ? <div class={styles.underline} /> : null}
+      <div className={styles.border} />
+      {variant === 'underline' ? <div className={styles.underline} /> : null}
     </div>
   )
 })

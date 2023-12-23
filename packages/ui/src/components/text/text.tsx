@@ -1,17 +1,15 @@
-import { ComponentChildren, h } from 'preact'
-
 import { createClassName } from '../../utilities/create-class-name.js'
-import { createComponent } from '../../utilities/create-component.js'
+import { forwardRef } from 'react'
 import styles from './text.module.css'
 
 export type TextProps = {
   align?: TextAlignment
-  children: ComponentChildren
+  children: React.ReactNode
   numeric?: boolean
 }
 export type TextAlignment = 'left' | 'center' | 'right'
 
-export const Text = createComponent<HTMLDivElement, TextProps>(function ({
+export const Text = forwardRef<HTMLDivElement, TextProps>(function ({
   align = 'left',
   children,
   numeric = false,
@@ -20,7 +18,7 @@ export const Text = createComponent<HTMLDivElement, TextProps>(function ({
   return (
     <div
       {...rest}
-      class={createClassName([
+      className={createClassName([
         styles.text,
         styles[align],
         numeric === true ? styles.numeric : null

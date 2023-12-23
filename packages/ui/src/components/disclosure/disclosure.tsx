@@ -1,22 +1,26 @@
-import { ComponentChildren, Fragment, h } from 'preact'
-import { useCallback } from 'preact/hooks'
-
-import { IconCaretRight16 } from '../../icons/icon-16/icon-caret-right-16.js'
 import { Event, EventHandler } from '../../types/event-handler.js'
+import {
+  Fragment,
+  KeyboardEvent,
+  MouseEventHandler,
+  forwardRef,
+  useCallback
+} from 'react'
+
 import { FocusableComponentProps } from '../../types/focusable-component-props.js'
-import { createComponent } from '../../utilities/create-component.js'
+import { IconCaretRight16 } from '../../icons/icon-16/icon-caret-right-16.js'
 import { noop } from '../../utilities/no-op.js'
 import styles from './disclosure.module.css'
 
 export interface DisclosureProps
   extends FocusableComponentProps<HTMLInputElement> {
-  children: ComponentChildren
-  onClick?: EventHandler.onClick<HTMLInputElement>
+  children: React.ReactNode
+  onClick?: MouseEventHandler<HTMLInputElement>
   open: boolean
   title: string
 }
 
-export const Disclosure = createComponent<HTMLInputElement, DisclosureProps>(
+export const Disclosure = forwardRef<HTMLInputElement, DisclosureProps>(
   function (
     {
       children,
@@ -30,7 +34,7 @@ export const Disclosure = createComponent<HTMLInputElement, DisclosureProps>(
     ref
   ) {
     const handleKeyDown = useCallback(
-      function (event: Event.onKeyDown<HTMLInputElement>) {
+      function (event: KeyboardEvent<HTMLInputElement>) {
         onKeyDown(event)
         if (event.key === 'Escape') {
           if (propagateEscapeKeyDown === false) {
@@ -44,25 +48,27 @@ export const Disclosure = createComponent<HTMLInputElement, DisclosureProps>(
 
     return (
       <Fragment>
-        <label class={styles.label}>
+        <label className={styles.label}>
           <input
             {...rest}
             ref={ref}
             checked={open === true}
-            class={styles.input}
+            className={styles.input}
             onClick={onClick}
             onKeyDown={handleKeyDown}
             tabIndex={0}
             type="checkbox"
           />
-          <div class={styles.title}>
-            <div class={styles.icon}>
+          <div className={styles.title}>
+            <div className={styles.icon}>
               <IconCaretRight16 />
             </div>
             {title}
           </div>
         </label>
-        {open === true ? <div class={styles.children}>{children}</div> : null}
+        {open === true ? (
+          <div className={styles.children}>{children}</div>
+        ) : null}
       </Fragment>
     )
   }

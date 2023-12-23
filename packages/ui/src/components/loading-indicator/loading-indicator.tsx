@@ -1,21 +1,19 @@
-import { h } from 'preact'
-
 import { IconColor } from '../../types/colors.js'
-import { createComponent } from '../../utilities/create-component.js'
+import { forwardRef } from 'react'
 import styles from './loading-indicator.module.css'
 
 export type LoadingIndicatorProps = {
   color?: IconColor
 }
 
-export const LoadingIndicator = createComponent<
+export const LoadingIndicator = forwardRef<
   HTMLDivElement,
   LoadingIndicatorProps
 >(function ({ color, ...rest }, ref) {
   return (
-    <div {...rest} ref={ref} class={styles.loadingIndicator}>
+    <div {...rest} ref={ref} className={styles.loadingIndicator}>
       <svg
-        class={styles.svg}
+        className={styles.svg}
         style={
           typeof color === 'undefined'
             ? undefined

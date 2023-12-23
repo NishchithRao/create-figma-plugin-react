@@ -1,18 +1,16 @@
-import { ComponentChildren, h } from 'preact'
-
-import { createComponent } from '../../utilities/create-component.js'
+import { forwardRef } from 'react'
 import styles from './muted.module.css'
 
 export type MutedProps = {
-  children: ComponentChildren
+  children: React.ReactNode
 }
 
-export const Muted = createComponent<HTMLSpanElement, MutedProps>(function (
+export const Muted = forwardRef<HTMLSpanElement, MutedProps>(function (
   { children, ...rest },
   ref
 ) {
   return (
-    <span {...rest} ref={ref} class={styles.muted}>
+    <span {...rest} ref={ref} className={styles.muted}>
       {children}
     </span>
   )

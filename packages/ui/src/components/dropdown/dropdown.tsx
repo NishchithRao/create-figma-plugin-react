@@ -1,32 +1,42 @@
-import { ComponentChildren, h, RefObject } from 'preact'
-import { createPortal } from 'preact/compat'
-import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
-
-import menuStyles from '../../css/menu.module.css'
-import { useMouseDownOutside } from '../../hooks/use-mouse-down-outside.js'
-import { useScrollableMenu } from '../../hooks/use-scrollable-menu.js'
-import { IconControlChevronDown8 } from '../../icons/icon-8/icon-control-chevron-down-8.js'
-import { IconMenuCheckmarkChecked16 } from '../../icons/icon-16/icon-menu-checkmark-checked-16.js'
-import { Event, EventHandler } from '../../types/event-handler.js'
-import { createClassName } from '../../utilities/create-class-name.js'
-import { createComponent } from '../../utilities/create-component.js'
-import { getCurrentFromRef } from '../../utilities/get-current-from-ref.js'
-import { noop } from '../../utilities/no-op.js'
+import {
+  ChangeEvent,
+  ChangeEventHandler,
+  KeyboardEvent,
+  KeyboardEventHandler,
+  MouseEvent,
+  MouseEventHandler,
+  MutableRefObject,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from 'react'
 import {
   INVALID_ID,
   ITEM_ID_DATA_ATTRIBUTE_NAME
 } from '../../utilities/private/constants.js'
-import dropdownStyles from './dropdown.module.css'
+
+import { IconControlChevronDown8 } from '../../icons/icon-8/icon-control-chevron-down-8.js'
+import { IconMenuCheckmarkChecked16 } from '../../icons/icon-16/icon-menu-checkmark-checked-16.js'
 import { Id } from './private/types.js'
+import { createClassName } from '../../utilities/create-class-name.js'
+import { createPortal } from 'react-dom'
+import dropdownStyles from './dropdown.module.css'
+import { getCurrentFromRef } from '../../utilities/get-current-from-ref.js'
+import menuStyles from '../../css/menu.module.css'
+import { noop } from '../../utilities/no-op.js'
 import { updateMenuElementLayout } from './private/update-menu-element-layout.js'
+import { useMouseDownOutside } from '../../hooks/use-mouse-down-outside.js'
+import { useScrollableMenu } from '../../hooks/use-scrollable-menu.js'
 
 export interface DropdownProps {
   disabled?: boolean
-  icon?: ComponentChildren
-  onChange?: EventHandler.onChange<HTMLInputElement>
-  onKeyDown?: EventHandler.onKeyDown<HTMLDivElement>
-  onMouseDown?: EventHandler.onMouseDown<HTMLDivElement>
-  onValueChange?: EventHandler.onValueChange<string>
+  icon?: string | JSX.Element
+  onChange?: ChangeEventHandler<HTMLInputElement>
+  onKeyDown?: KeyboardEventHandler<HTMLDivElement>
+  onMouseDown?: MouseEventHandler<HTMLDivElement>
+  onValueChange?: (value?: string) => void
   options: Array<DropdownOption>
   placeholder?: string
   propagateEscapeKeyDown?: boolean
@@ -48,370 +58,373 @@ export type DropdownOptionValue = {
 }
 export type DropdownVariant = 'border' | 'underline'
 
-export const Dropdown = createComponent<HTMLDivElement, DropdownProps>(
-  function (
-    {
-      disabled = false,
-      icon,
-      onChange = noop,
-      onKeyDown = noop,
-      onMouseDown = noop,
-      onValueChange = noop,
-      options,
-      placeholder,
-      propagateEscapeKeyDown = true,
-      value,
-      variant,
-      ...rest
-    },
-    ref
-  ) {
-    if (typeof icon === 'string' && icon.length !== 1) {
-      throw new Error(`String \`icon\` must be a single character: "${icon}"`)
-    }
+export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(function (
+  {
+    disabled = false,
+    icon,
+    onChange = noop,
+    onKeyDown = noop,
+    onMouseDown = noop,
+    onValueChange = noop,
+    options,
+    placeholder,
+    propagateEscapeKeyDown = true,
+    value,
+    variant,
+    ...rest
+  },
+  ref
+) {
+  if (typeof icon === 'string' && icon.length !== 1) {
+    console.warn(`String \`icon\` must be a single character: "${icon}"`)
+    return null
+  }
 
-    const rootElementRef: RefObject<HTMLDivElement> = useRef(null)
-    const menuElementRef: RefObject<HTMLDivElement> = useRef(null)
+  const rootElementRef: MutableRefObject<HTMLDivElement | null> =
+    useRef<HTMLDivElement>(null)
+  const menuElementRef = useRef<HTMLDivElement>(null)
 
-    const [isMenuVisible, setIsMenuVisible] = useState(false)
+  const [isMenuVisible, setIsMenuVisible] = useState(false)
 
-    const index = findOptionIndexByValue(options, value)
-    if (value !== null && index === -1) {
-      throw new Error(`Invalid \`value\`: ${value}`)
-    }
-    const [selectedId, setSelectedId] = useState<Id>(
-      index === -1 ? INVALID_ID : `${index}`
-    )
-    const children =
-      typeof options[index] === 'undefined'
-        ? ''
-        : getDropdownOptionValue(options[index])
+  const index = findOptionIndexByValue(options, value)
+  if (value !== null && index === -1) {
+    console.warn(`Invalid \`value\`: ${value}`)
+  }
+  const [selectedId, setSelectedId] = useState<Id>(
+    index === -1 ? INVALID_ID : `${index}`
+  )
+  const children =
+    typeof options[index] === 'undefined'
+      ? ''
+      : getDropdownOptionValue(options[index])
 
-    // Uncomment to debug
-    // console.table([{ isMenuVisible, selectedId }])
+  // Uncomment to debug
+  // console.table([{ isMenuVisible, selectedId }])
 
-    const { handleScrollableMenuKeyDown, handleScrollableMenuItemMouseMove } =
-      useScrollableMenu({
-        itemIdDataAttributeName: ITEM_ID_DATA_ATTRIBUTE_NAME,
-        menuElementRef,
-        selectedId,
-        setSelectedId
-      })
-
-    const triggerRootBlur = useCallback(function () {
-      getCurrentFromRef(rootElementRef).blur()
-    }, [])
-
-    const triggerRootFocus = useCallback(function () {
-      getCurrentFromRef(rootElementRef).focus()
-    }, [])
-
-    const triggerMenuUpdateLayout = useCallback(function (selectedId: Id) {
-      const rootElement = getCurrentFromRef(rootElementRef)
-      const menuElement = getCurrentFromRef(menuElementRef)
-      updateMenuElementLayout(rootElement, menuElement, selectedId)
-    }, [])
-
-    const triggerMenuHide = useCallback(function () {
-      setIsMenuVisible(false)
-      setSelectedId(INVALID_ID)
-    }, [])
-
-    const triggerMenuShow = useCallback(
-      function () {
-        if (isMenuVisible === true) {
-          return
-        }
-        // Show the menu and update the `selectedId` on focus
-        setIsMenuVisible(true)
-        if (value === null) {
-          triggerMenuUpdateLayout(selectedId)
-          return
-        }
-        const index = findOptionIndexByValue(options, value)
-        if (index === -1) {
-          throw new Error(`Invalid \`value\`: ${value}`)
-        }
-        const newSelectedId = `${index}`
-        setSelectedId(newSelectedId)
-        triggerMenuUpdateLayout(newSelectedId)
-      },
-      [isMenuVisible, options, selectedId, triggerMenuUpdateLayout, value]
-    )
-
-    const handleRootKeyDown = useCallback(
-      function (event: Event.onKeyDown<HTMLDivElement>) {
-        onKeyDown(event)
-        const key = event.key
-        if (key === 'ArrowUp' || key === 'ArrowDown') {
-          event.preventDefault()
-          if (isMenuVisible === false) {
-            triggerMenuShow()
-            return
-          }
-          handleScrollableMenuKeyDown(event)
-          return
-        }
-        if (key === 'Escape') {
-          event.preventDefault()
-          if (propagateEscapeKeyDown === false) {
-            event.stopPropagation()
-          }
-          if (isMenuVisible === true) {
-            triggerMenuHide()
-            return
-          }
-          triggerRootBlur()
-          return
-        }
-        if (key === 'Enter') {
-          event.preventDefault()
-          if (isMenuVisible === false) {
-            triggerMenuShow()
-            return
-          }
-          if (selectedId !== INVALID_ID) {
-            const selectedElement = getCurrentFromRef(
-              menuElementRef
-            ).querySelector<HTMLInputElement>(
-              `[${ITEM_ID_DATA_ATTRIBUTE_NAME}='${selectedId}']`
-            )
-            if (selectedElement === null) {
-              throw new Error('`selectedElement` is `null`')
-            }
-            selectedElement.checked = true
-            const changeEvent = new window.Event('change', {
-              bubbles: true,
-              cancelable: true
-            })
-            selectedElement.dispatchEvent(changeEvent)
-          }
-          triggerMenuHide()
-          return
-        }
-        if (key === 'Tab') {
-          triggerMenuHide()
-          return
-        }
-      },
-      [
-        handleScrollableMenuKeyDown,
-        isMenuVisible,
-        onKeyDown,
-        propagateEscapeKeyDown,
-        selectedId,
-        triggerMenuHide,
-        triggerMenuShow,
-        triggerRootBlur
-      ]
-    )
-
-    const handleRootMouseDown = useCallback(
-      function (event: Event.onMouseDown<HTMLDivElement>) {
-        // `mousedown` events from `menuElement` are stopped from propagating to `rootElement` by `handleMenuMouseDown`
-        onMouseDown(event)
-        if (isMenuVisible === false) {
-          triggerMenuShow()
-        }
-      },
-      [isMenuVisible, onMouseDown, triggerMenuShow]
-    )
-
-    const handleMenuMouseDown = useCallback(function (
-      event: Event.onMouseDown<HTMLDivElement>
-    ) {
-      // Stop the `mousedown` event from propagating to the `rootElement`
-      event.stopPropagation()
-    }, [])
-
-    const handleOptionChange = useCallback(
-      function (event: Event.onChange<HTMLInputElement>) {
-        onChange(event)
-        const id = event.currentTarget.getAttribute(ITEM_ID_DATA_ATTRIBUTE_NAME)
-        if (id === null) {
-          throw new Error('`id` is `null`')
-        }
-        const optionValue = options[parseInt(id, 10)] as DropdownOptionValue
-        const newValue = optionValue.value
-        onValueChange(newValue)
-        // Select `root`, then hide the menu
-        triggerRootFocus()
-        triggerMenuHide()
-      },
-      [onChange, onValueChange, options, triggerMenuHide, triggerRootFocus]
-    )
-
-    const handleSelectedOptionClick = useCallback(
-      function () {
-        triggerRootFocus()
-        triggerMenuHide()
-      },
-      [triggerMenuHide, triggerRootFocus]
-    )
-
-    const handleMouseDownOutside = useCallback(
-      function () {
-        if (isMenuVisible === false) {
-          return
-        }
-        triggerMenuHide()
-        triggerRootBlur()
-      },
-      [isMenuVisible, triggerRootBlur, triggerMenuHide]
-    )
-    useMouseDownOutside({
-      onMouseDownOutside: handleMouseDownOutside,
-      ref: rootElementRef
+  const { handleScrollableMenuKeyDown, handleScrollableMenuItemMouseMove } =
+    useScrollableMenu({
+      itemIdDataAttributeName: ITEM_ID_DATA_ATTRIBUTE_NAME,
+      menuElementRef,
+      selectedId,
+      setSelectedId
     })
 
-    useEffect(
-      function () {
-        function handleWindowScroll() {
-          if (isMenuVisible === false) {
+  const triggerRootBlur = useCallback(function () {
+    getCurrentFromRef(rootElementRef)?.blur()
+  }, [])
+
+  const triggerRootFocus = useCallback(function () {
+    getCurrentFromRef(rootElementRef)?.focus()
+  }, [])
+
+  const triggerMenuUpdateLayout = useCallback(function (selectedId: Id) {
+    const rootElement = getCurrentFromRef(rootElementRef)
+    const menuElement = getCurrentFromRef(menuElementRef)
+    updateMenuElementLayout(rootElement, menuElement, selectedId)
+  }, [])
+
+  const triggerMenuHide = useCallback(function () {
+    setIsMenuVisible(false)
+    setSelectedId(INVALID_ID)
+  }, [])
+
+  const triggerMenuShow = useCallback(
+    function () {
+      if (isMenuVisible === true) {
+        return
+      }
+      // Show the menu and update the `selectedId` on focus
+      setIsMenuVisible(true)
+      if (value === null) {
+        triggerMenuUpdateLayout(selectedId)
+        return
+      }
+      const index = findOptionIndexByValue(options, value)
+      if (index === -1) {
+        console.warn(`Invalid \`value\`: ${value}`)
+      }
+      const newSelectedId = `${index}`
+      setSelectedId(newSelectedId)
+      triggerMenuUpdateLayout(newSelectedId)
+    },
+    [isMenuVisible, options, selectedId, triggerMenuUpdateLayout, value]
+  )
+
+  const handleRootKeyDown = useCallback(
+    function (event: KeyboardEvent<HTMLDivElement>) {
+      onKeyDown(event)
+      const key = event.key
+      if (key === 'ArrowUp' || key === 'ArrowDown') {
+        event.preventDefault()
+        if (isMenuVisible === false) {
+          triggerMenuShow()
+          return
+        }
+        handleScrollableMenuKeyDown(event)
+        return
+      }
+      if (key === 'Escape') {
+        event.preventDefault()
+        if (propagateEscapeKeyDown === false) {
+          event.stopPropagation()
+        }
+        if (isMenuVisible === true) {
+          triggerMenuHide()
+          return
+        }
+        triggerRootBlur()
+        return
+      }
+      if (key === 'Enter') {
+        event.preventDefault()
+        if (isMenuVisible === false) {
+          triggerMenuShow()
+          return
+        }
+        if (selectedId !== INVALID_ID) {
+          const selectedElement = getCurrentFromRef(
+            menuElementRef
+          )?.querySelector<HTMLInputElement>(
+            `[${ITEM_ID_DATA_ATTRIBUTE_NAME}='${selectedId}']`
+          )
+          if (selectedElement === null) {
+            console.warn('selected element is null')
             return
           }
-          triggerRootFocus()
-          triggerMenuHide()
+          if (selectedElement) selectedElement.checked = true
+          const changeEvent = new window.Event('change', {
+            bubbles: true,
+            cancelable: true
+          })
+          if (selectedElement) selectedElement.dispatchEvent(changeEvent)
         }
-        window.addEventListener('scroll', handleWindowScroll)
-        return function () {
-          window.removeEventListener('scroll', handleWindowScroll)
-        }
-      },
-      [isMenuVisible, triggerMenuHide, triggerRootFocus]
-    )
+        triggerMenuHide()
+        return
+      }
+      if (key === 'Tab') {
+        triggerMenuHide()
+        return
+      }
+    },
+    [
+      handleScrollableMenuKeyDown,
+      isMenuVisible,
+      onKeyDown,
+      propagateEscapeKeyDown,
+      selectedId,
+      triggerMenuHide,
+      triggerMenuShow,
+      triggerRootBlur
+    ]
+  )
 
-    const refCallback = useCallback(
-      function (rootElement: null | HTMLDivElement) {
-        rootElementRef.current = rootElement
-        if (ref === null) {
+  const handleRootMouseDown = useCallback(
+    function (event: MouseEvent<HTMLDivElement>) {
+      // `mousedown` events from `menuElement` are stopped from propagating to `rootElement` by `handleMenuMouseDown`
+      onMouseDown(event)
+      if (isMenuVisible === false) {
+        triggerMenuShow()
+      }
+    },
+    [isMenuVisible, onMouseDown, triggerMenuShow]
+  )
+
+  const handleMenuMouseDown = useCallback(function (
+    event: MouseEvent<HTMLDivElement>
+  ) {
+    // Stop the `mousedown` event from propagating to the `rootElement`
+    event.stopPropagation()
+  }, [])
+
+  const handleOptionChange = useCallback(
+    function (event: ChangeEvent<HTMLInputElement>) {
+      onChange(event)
+      const id = event.currentTarget.getAttribute(ITEM_ID_DATA_ATTRIBUTE_NAME)
+      if (id === null) {
+        console.warn('`id` is `null`')
+      }
+      const optionValue = options[
+        parseInt(id || '0', 10)
+      ] as DropdownOptionValue
+      const newValue = optionValue.value
+      onValueChange(newValue)
+      // Select `root`, then hide the menu
+      triggerRootFocus()
+      triggerMenuHide()
+    },
+    [onChange, onValueChange, options, triggerMenuHide, triggerRootFocus]
+  )
+
+  const handleSelectedOptionClick = useCallback(
+    function () {
+      triggerRootFocus()
+      triggerMenuHide()
+    },
+    [triggerMenuHide, triggerRootFocus]
+  )
+
+  const handleMouseDownOutside = useCallback(
+    function () {
+      if (isMenuVisible === false) {
+        return
+      }
+      triggerMenuHide()
+      triggerRootBlur()
+    },
+    [isMenuVisible, triggerRootBlur, triggerMenuHide]
+  )
+  useMouseDownOutside({
+    onMouseDownOutside: handleMouseDownOutside,
+    ref: rootElementRef
+  })
+
+  useEffect(
+    function () {
+      function handleWindowScroll() {
+        if (isMenuVisible === false) {
           return
         }
-        if (typeof ref === 'function') {
-          ref(rootElement)
-          return
-        }
-        ref.current = rootElement
-      },
-      [ref, rootElementRef]
-    )
+        triggerRootFocus()
+        triggerMenuHide()
+      }
+      window.addEventListener('scroll', handleWindowScroll)
+      return function () {
+        window.removeEventListener('scroll', handleWindowScroll)
+      }
+    },
+    [isMenuVisible, triggerMenuHide, triggerRootFocus]
+  )
 
-    return (
-      <div
-        {...rest}
-        ref={refCallback}
-        class={createClassName([
-          dropdownStyles.dropdown,
-          variant === 'border' ? dropdownStyles.hasBorder : null,
-          typeof icon !== 'undefined' ? dropdownStyles.hasIcon : null,
-          disabled === true ? dropdownStyles.disabled : null
-        ])}
-        onKeyDown={disabled === true ? undefined : handleRootKeyDown}
-        onMouseDown={handleRootMouseDown}
-        tabIndex={0}
-      >
-        {typeof icon === 'undefined' ? null : (
-          <div class={dropdownStyles.icon}>{icon}</div>
-        )}
-        {value === null ? (
-          typeof placeholder === 'undefined' ? (
-            <div class={dropdownStyles.empty} />
-          ) : (
-            <div
-              class={createClassName([
-                dropdownStyles.value,
-                dropdownStyles.placeholder
-              ])}
-            >
-              {placeholder}
-            </div>
-          )
+  const refCallback = useCallback(
+    function (rootElement: null | HTMLDivElement) {
+      rootElementRef.current = rootElement
+      if (ref === null) {
+        return
+      }
+      if (typeof ref === 'function') {
+        ref(rootElement)
+        return
+      }
+      ref.current = rootElement
+    },
+    [ref, rootElementRef]
+  )
+
+  return (
+    <div
+      {...rest}
+      ref={refCallback}
+      className={createClassName([
+        dropdownStyles.dropdown,
+        variant === 'border' ? dropdownStyles.hasBorder : null,
+        typeof icon !== 'undefined' ? dropdownStyles.hasIcon : null,
+        disabled === true ? dropdownStyles.disabled : null
+      ])}
+      onKeyDown={disabled === true ? undefined : handleRootKeyDown}
+      onMouseDown={handleRootMouseDown}
+      tabIndex={0}
+    >
+      {typeof icon === 'undefined' ? null : (
+        <div className={dropdownStyles.icon}>{icon}</div>
+      )}
+      {value === null ? (
+        typeof placeholder === 'undefined' ? (
+          <div className={dropdownStyles.empty} />
         ) : (
-          <div class={dropdownStyles.value}>{children}</div>
-        )}
-        <div class={dropdownStyles.chevronIcon}>
-          <IconControlChevronDown8 />
-        </div>
-        {variant === 'underline' ? (
-          <div class={dropdownStyles.underline} />
-        ) : null}
-        <div class={dropdownStyles.border} />
-        {createPortal(
           <div
-            ref={menuElementRef}
-            class={createClassName([
-              menuStyles.menu,
-              dropdownStyles.menu,
-              disabled === true || isMenuVisible === false
-                ? menuStyles.hidden
-                : null
+            className={createClassName([
+              dropdownStyles.value,
+              dropdownStyles.placeholder
             ])}
-            onMouseDown={handleMenuMouseDown}
           >
-            {options.map(function (option: DropdownOption, index: number) {
-              if (typeof option === 'string') {
-                return <hr key={index} class={menuStyles.optionSeparator} />
-              }
-              if ('header' in option) {
-                return (
-                  <h1 key={index} class={menuStyles.optionHeader}>
-                    {option.header}
-                  </h1>
-                )
-              }
-              return (
-                <label
-                  key={index}
-                  class={createClassName([
-                    menuStyles.optionValue,
-                    option.disabled === true
-                      ? menuStyles.optionValueDisabled
-                      : null,
-                    option.disabled !== true && `${index}` === selectedId
-                      ? menuStyles.optionValueSelected
-                      : null
-                  ])}
-                >
-                  <input
-                    checked={value === option.value}
-                    class={menuStyles.input}
-                    disabled={option.disabled === true}
-                    // If clicked on an unselected element, set the value
-                    onChange={
-                      value === option.value ? undefined : handleOptionChange
-                    }
-                    // Else hide the menu if clicked on an already-selected element
-                    onClick={
-                      value === option.value
-                        ? handleSelectedOptionClick
-                        : undefined
-                    }
-                    onMouseMove={handleScrollableMenuItemMouseMove}
-                    tabIndex={-1}
-                    type="radio"
-                    value={`${option.value}`}
-                    {...{ [ITEM_ID_DATA_ATTRIBUTE_NAME]: `${index}` }}
-                  />
-                  {option.value === value ? (
-                    <div class={menuStyles.checkIcon}>
-                      <IconMenuCheckmarkChecked16 />
-                    </div>
-                  ) : null}
-                  {typeof option.text === 'undefined'
-                    ? option.value
-                    : option.text}
-                </label>
-              )
-            })}
-          </div>,
-          document.body
-        )}
+            {placeholder}
+          </div>
+        )
+      ) : (
+        <div className={dropdownStyles.value}>{children}</div>
+      )}
+      <div className={dropdownStyles.chevronIcon}>
+        <IconControlChevronDown8 />
       </div>
-    )
-  }
-)
+      {variant === 'underline' ? (
+        <div className={dropdownStyles.underline} />
+      ) : null}
+      <div className={dropdownStyles.border} />
+      {createPortal(
+        <div
+          ref={menuElementRef}
+          className={createClassName([
+            menuStyles.menu,
+            dropdownStyles.menu,
+            disabled === true || isMenuVisible === false
+              ? menuStyles.hidden
+              : null
+          ])}
+          onMouseDown={handleMenuMouseDown}
+        >
+          {options.map(function (option: DropdownOption, index: number) {
+            if (typeof option === 'string') {
+              return <hr key={index} className={menuStyles.optionSeparator} />
+            }
+            if ('header' in option) {
+              return (
+                <h1 key={index} className={menuStyles.optionHeader}>
+                  {option.header}
+                </h1>
+              )
+            }
+            return (
+              <label
+                key={index}
+                className={createClassName([
+                  menuStyles.optionValue,
+                  option.disabled === true
+                    ? menuStyles.optionValueDisabled
+                    : null,
+                  option.disabled !== true && `${index}` === selectedId
+                    ? menuStyles.optionValueSelected
+                    : null
+                ])}
+              >
+                <input
+                  checked={value === option.value}
+                  className={menuStyles.input}
+                  disabled={option.disabled === true}
+                  // If clicked on an unselected element, set the value
+                  onChange={
+                    value === option.value ? undefined : handleOptionChange
+                  }
+                  // Else hide the menu if clicked on an already-selected element
+                  onClick={
+                    value === option.value
+                      ? handleSelectedOptionClick
+                      : undefined
+                  }
+                  onMouseMove={handleScrollableMenuItemMouseMove}
+                  tabIndex={-1}
+                  type="radio"
+                  value={`${option.value}`}
+                  {...{ [ITEM_ID_DATA_ATTRIBUTE_NAME]: `${index}` }}
+                />
+                {option.value === value ? (
+                  <div className={menuStyles.checkIcon}>
+                    <IconMenuCheckmarkChecked16 />
+                  </div>
+                ) : null}
+                {typeof option.text === 'undefined'
+                  ? option.value
+                  : option.text}
+              </label>
+            )
+          })}
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+})
 
-function getDropdownOptionValue(option: DropdownOption): ComponentChildren {
+function getDropdownOptionValue(option: DropdownOption): React.ReactNode {
   if (typeof option !== 'string') {
     if ('text' in option) {
       return option.text
@@ -420,7 +433,7 @@ function getDropdownOptionValue(option: DropdownOption): ComponentChildren {
       return option.value
     }
   }
-  throw new Error('Invariant violation')
+  console.warn('Invariant violation')
 }
 
 // Returns the index of the option in `options` with the given `value`, else `-1`

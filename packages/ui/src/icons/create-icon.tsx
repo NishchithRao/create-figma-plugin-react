@@ -1,7 +1,5 @@
-import { h } from 'preact'
-
 import { IconColor } from '../types/colors.js'
-import { createComponent } from '../utilities/create-component.js'
+import { forwardRef } from 'react'
 import styles from './icon.module.css'
 
 export type IconProps = {
@@ -13,14 +11,11 @@ export function createIcon(
   options: { width: number; height: number }
 ) {
   const { width, height } = options
-  return createComponent<SVGSVGElement, IconProps>(function ({
-    color,
-    ...rest
-  }) {
+  return forwardRef<SVGSVGElement, IconProps>(function ({ color, ...rest }) {
     return (
       <svg
         {...rest}
-        class={styles.icon}
+        className={styles.icon}
         height={height}
         style={{
           fill:

@@ -1,33 +1,45 @@
-import { MIXED_STRING } from '@create-figma-plugin/utilities'
-import { h, RefObject } from 'preact'
-import { useCallback, useRef, useState } from 'preact/hooks'
+import {
+  ChangeEventHandler,
+  FocusEvent,
+  FocusEventHandler,
+  FormEvent,
+  FormEventHandler,
+  KeyboardEvent,
+  MouseEvent,
+  MouseEventHandler,
+  MutableRefObject,
+  forwardRef,
+  useCallback,
+  useRef,
+  useState
+} from 'react'
 
-import { Event, EventHandler } from '../../../../types/event-handler.js'
 import { FocusableComponentProps } from '../../../../types/focusable-component-props.js'
-import { createComponent } from '../../../../utilities/create-component.js'
+import { MIXED_STRING } from '@create-figma-plugin/utilities'
 import { getCurrentFromRef } from '../../../../utilities/get-current-from-ref.js'
-import { noop } from '../../../../utilities/no-op.js'
 import { isKeyCodeCharacterGenerating } from '../../private/is-keycode-character-generating.js'
+import { noop } from '../../../../utilities/no-op.js'
 
 const EMPTY_STRING = ''
 
 export interface RawTextboxProps
   extends FocusableComponentProps<HTMLInputElement> {
   disabled?: boolean
-  onBlur?: EventHandler.onBlur<HTMLInputElement>
-  onFocus?: EventHandler.onFocus<HTMLInputElement>
-  onMouseDown?: EventHandler.onMouseUp<HTMLInputElement>
-  onInput?: EventHandler.onInput<HTMLInputElement>
-  onValueInput?: EventHandler.onValueChange<string>
+  onBlur?: FocusEventHandler<HTMLInputElement>
+  onFocus?: FocusEventHandler<HTMLInputElement>
+  onMouseDown?: MouseEventHandler<HTMLInputElement>
+  onInput?: FormEventHandler<HTMLInputElement>
+  onValueInput?: (value?: string) => void
   password?: boolean
   placeholder?: string
   revertOnEscapeKeyDown?: boolean
   spellCheck?: boolean
   validateOnBlur?: (value: string) => string | boolean
   value: string
+  className?: string
 }
 
-export const RawTextbox = createComponent<HTMLInputElement, RawTextboxProps>(
+export const RawTextbox = forwardRef<HTMLInputElement, RawTextboxProps>(
   function (
     {
       disabled = false,
@@ -48,22 +60,23 @@ export const RawTextbox = createComponent<HTMLInputElement, RawTextboxProps>(
     },
     ref
   ) {
-    const inputElementRef: RefObject<HTMLInputElement> = useRef(null)
+    const inputElementRef: MutableRefObject<HTMLInputElement | null> =
+      useRef<HTMLInputElement>(null)
 
     const [originalValue, setOriginalValue] = useState(EMPTY_STRING) // Value of the textbox when it was initially focused
 
     const setTextboxValue = useCallback(function (value: string) {
       const inputElement = getCurrentFromRef(inputElementRef)
-      inputElement.value = value
+      if (inputElement) inputElement.value = value
       const inputEvent = new window.Event('input', {
         bubbles: true,
         cancelable: true
       })
-      inputElement.dispatchEvent(inputEvent)
+      inputElement?.dispatchEvent(inputEvent)
     }, [])
 
     const handleBlur = useCallback(
-      function (event: Event.onBlur<HTMLInputElement>) {
+      function (event: FocusEvent<HTMLInputElement>) {
         onBlur(event)
         if (typeof validateOnBlur !== 'undefined') {
           const result = validateOnBlur(value)
@@ -88,7 +101,7 @@ export const RawTextbox = createComponent<HTMLInputElement, RawTextboxProps>(
     )
 
     const handleFocus = useCallback(
-      function (event: Event.onFocus<HTMLInputElement>) {
+      function (event: FocusEvent<HTMLInputElement>) {
         onFocus(event)
         setOriginalValue(value)
         event.currentTarget.select()
@@ -97,7 +110,7 @@ export const RawTextbox = createComponent<HTMLInputElement, RawTextboxProps>(
     )
 
     const handleInput = useCallback(
-      function (event: Event.onInput<HTMLInputElement>) {
+      function (event: FormEvent<HTMLInputElement>) {
         onInput(event)
         const newValue = event.currentTarget.value
         onValueInput(newValue)
@@ -106,7 +119,7 @@ export const RawTextbox = createComponent<HTMLInputElement, RawTextboxProps>(
     )
 
     const handleKeyDown = useCallback(
-      function (event: Event.onKeyDown<HTMLInputElement>) {
+      function (event: KeyboardEvent<HTMLInputElement>) {
         onKeyDown(event)
         if (event.key === 'Escape') {
           if (revertOnEscapeKeyDown === true) {
@@ -139,7 +152,7 @@ export const RawTextbox = createComponent<HTMLInputElement, RawTextboxProps>(
     )
 
     const handleMouseDown = useCallback(
-      function (event: Event.onMouseUp<HTMLInputElement>) {
+      function (event: MouseEvent<HTMLInputElement>) {
         onMouseDown(event)
         if (value === MIXED_STRING) {
           // Prevent changing the selection if `value` is `MIXED_STRING`
@@ -152,7 +165,7 @@ export const RawTextbox = createComponent<HTMLInputElement, RawTextboxProps>(
 
     const refCallback = useCallback(
       function (inputElement: null | HTMLInputElement) {
-        inputElementRef.current = inputElement
+        if (inputElementRef) inputElementRef.current = inputElement
         if (ref === null) {
           return
         }
@@ -176,7 +189,7 @@ export const RawTextbox = createComponent<HTMLInputElement, RawTextboxProps>(
         onKeyDown={handleKeyDown}
         onMouseDown={handleMouseDown}
         placeholder={placeholder}
-        spellcheck={spellCheck}
+        spellCheck={spellCheck}
         tabIndex={0}
         type={password === true ? 'password' : 'text'}
         value={value === MIXED_STRING ? 'Mixed' : value}

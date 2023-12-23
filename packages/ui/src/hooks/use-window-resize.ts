@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'preact/hooks'
+import { useCallback, useEffect, useRef } from 'react'
 
 export type ResizeBehaviorOnDoubleClick = 'minimize' | 'maximize'
 export type ResizeDirection = 'both' | 'horizontal' | 'vertical'
@@ -67,7 +67,7 @@ export function useWindowResize(
   const setWindowSize = useCallback(
     function ({ width, height }: { width?: number; height?: number }) {
       if (typeof width === 'undefined' && typeof height === 'undefined') {
-        throw new Error('Need at least one of `width` or `height`')
+        console.warn('Need at least one of `width` or `height`')
       }
       if (typeof width !== 'undefined') {
         windowSize.current.width = Math.min(maxWidth, Math.max(minWidth, width))

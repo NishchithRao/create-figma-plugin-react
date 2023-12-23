@@ -1,20 +1,18 @@
-import { ComponentChildren, h } from 'preact'
-import { useCallback, useState } from 'preact/hooks'
-
 import { Event, EventHandler } from '../../../types/event-handler.js'
+import { FocusEventHandler, forwardRef, useCallback, useState } from 'react'
+
 import { FocusableComponentProps } from '../../../types/focusable-component-props.js'
 import { createClassName } from '../../../utilities/create-class-name.js'
-import { createComponent } from '../../../utilities/create-component.js'
-import { noop } from '../../../utilities/no-op.js'
 import { fileComparator } from '../private/file-comparator.js'
+import { noop } from '../../../utilities/no-op.js'
 import styles from './file-upload-dropzone.module.css'
 
 export interface FileUploadDropzoneProps
   extends FocusableComponentProps<HTMLInputElement> {
   acceptedFileTypes?: Array<string>
-  children: ComponentChildren
+  children: React.ReactNode
   multiple?: boolean
-  onBlur?: EventHandler.onBlur<HTMLInputElement>
+  onBlur?: FocusEventHandler<HTMLInputElement>
   onChange?: EventHandler.onChange<HTMLInputElement>
   onDragEnd?: EventHandler.onDragEnd<HTMLInputElement>
   onDragEnter?: EventHandler.onDragEnter<HTMLInputElement>
@@ -23,7 +21,7 @@ export interface FileUploadDropzoneProps
   onSelectedFiles?: EventHandler.onSelectedFiles
 }
 
-export const FileUploadDropzone = createComponent<
+export const FileUploadDropzone = forwardRef<
   HTMLInputElement,
   FileUploadDropzoneProps
 >(function (
@@ -59,7 +57,7 @@ export const FileUploadDropzone = createComponent<
       onChange(event)
       const fileList = event.currentTarget.files
       if (fileList === null) {
-        throw new Error('`event.currentTarget.files` is `null`')
+        console.warn('`event.currentTarget.files` is `null`')
       }
       const files = parseFileList({ acceptedFileTypes, fileList })
       if (files.length > 0) {
@@ -99,7 +97,7 @@ export const FileUploadDropzone = createComponent<
     function (event: Event.onDrop<HTMLInputElement>) {
       onDrop(event)
       if (event.dataTransfer === null) {
-        throw new Error('`event.dataTransfer` is `null`')
+        console.warn('`event.dataTransfer` is `null`')
       }
       event.preventDefault()
       const fileList = event.dataTransfer.files
@@ -127,7 +125,7 @@ export const FileUploadDropzone = createComponent<
 
   return (
     <div
-      class={createClassName([
+      className={createClassName([
         styles.fileUploadDropzone,
         isDropActive === true ? styles.isDropActive : null
       ])}
@@ -140,7 +138,7 @@ export const FileUploadDropzone = createComponent<
             ? undefined
             : acceptedFileTypes.join(',')
         }
-        class={styles.input}
+        className={styles.input}
         multiple={multiple}
         onBlur={handleBlur}
         onChange={handleChange}
@@ -153,15 +151,15 @@ export const FileUploadDropzone = createComponent<
         title=""
         type="file"
       />
-      <div class={styles.fill} />
-      <div class={styles.border} />
-      <div class={styles.children}>{children}</div>
+      <div className={styles.fill} />
+      <div className={styles.border} />
+      <div className={styles.children}>{children}</div>
     </div>
   )
 })
 
 function parseFileList(options: {
-  fileList: FileList
+  fileList: FileList | null
   acceptedFileTypes: Array<string>
 }): Array<File> {
   const { fileList, acceptedFileTypes } = options

@@ -1,18 +1,16 @@
-import { ComponentChildren, h } from 'preact'
-
-import { createComponent } from '../../utilities/create-component.js'
+import { forwardRef } from 'react'
 import style from './preview.module.css'
 
 export type PreviewProps = {
-  children: ComponentChildren
+  children: React.ReactNode
 }
 
-export const Preview = createComponent<HTMLDivElement, PreviewProps>(function (
+export const Preview = forwardRef<HTMLDivElement, PreviewProps>(function (
   { children, ...rest },
   ref
 ) {
   return (
-    <div {...rest} ref={ref} class={style.preview}>
+    <div {...rest} ref={ref} className={style.preview}>
       {children}
     </div>
   )

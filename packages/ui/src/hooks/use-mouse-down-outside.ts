@@ -1,10 +1,9 @@
-import { RefObject } from 'preact'
-import { useEffect } from 'preact/hooks'
+import { MutableRefObject, useEffect } from 'react'
 
 import { getCurrentFromRef } from '../utilities/get-current-from-ref.js'
 
-export function useMouseDownOutside(options: {
-  ref: RefObject<HTMLElement>
+export function useMouseDownOutside<P = HTMLElement>(options: {
+  ref: MutableRefObject<P>
   onMouseDownOutside: () => void
 }): void {
   const { ref, onMouseDownOutside } = options
@@ -18,7 +17,7 @@ export function useMouseDownOutside(options: {
         const element = getCurrentFromRef(ref)
         if (
           element === event.target ||
-          element.contains(event.target as HTMLElement)
+          (element as HTMLElement).contains(event.target as HTMLElement)
         ) {
           return
         }

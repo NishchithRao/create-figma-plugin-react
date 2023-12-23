@@ -1,19 +1,15 @@
-import { JSX, RefObject } from 'preact'
-import { useCallback } from 'preact/hooks'
+import { KeyboardEvent, MouseEvent, MutableRefObject, useCallback } from 'react'
 
-import { Event } from '../types/event-handler.js'
 import { getCurrentFromRef } from '../utilities/get-current-from-ref.js'
 
-export function useScrollableMenu(options: {
+export function useScrollableMenu<P extends HTMLElement>(options: {
   itemIdDataAttributeName: string
-  menuElementRef: RefObject<HTMLDivElement>
+  menuElementRef: MutableRefObject<P | null>
   selectedId: null | string
   setSelectedId: (selectedId: string) => void
 }): {
-  handleScrollableMenuKeyDown: (event: Event.onKeyDown<HTMLElement>) => void
-  handleScrollableMenuItemMouseMove: (
-    event: Event.onMouseMove<HTMLElement>
-  ) => void
+  handleScrollableMenuKeyDown: (event: KeyboardEvent<HTMLElement>) => void
+  handleScrollableMenuItemMouseMove: (event: MouseEvent<HTMLElement>) => void
 } {
   const { itemIdDataAttributeName, menuElementRef, selectedId, setSelectedId } =
     options
@@ -21,9 +17,9 @@ export function useScrollableMenu(options: {
   const getItemElements = useCallback(
     function (): Array<HTMLElement> {
       return Array.from(
-        getCurrentFromRef(menuElementRef).querySelectorAll<HTMLElement>(
+        getCurrentFromRef(menuElementRef)?.querySelectorAll<HTMLElement>(
           `[${itemIdDataAttributeName}]`
-        )
+        ) || []
       ).filter(function (element: HTMLElement): boolean {
         return element.hasAttribute('disabled') === false
       })
@@ -42,7 +38,7 @@ export function useScrollableMenu(options: {
         return (element.getAttribute(itemIdDataAttributeName) as string) === id
       })
       if (index === -1) {
-        throw new Error('`index` is `-1`') // `id` is valid
+        console.warn('`index` is `-1`') // `id` is valid
       }
       return index
     },
@@ -57,14 +53,17 @@ export function useScrollableMenu(options: {
       const selectedElementOffsetTop =
         selectedElement.getBoundingClientRect().top
       const menuElement = getCurrentFromRef(menuElementRef)
-      const menuElementOffsetTop = menuElement.getBoundingClientRect().top
+      const menuElementOffsetTop = menuElement?.getBoundingClientRect().top || 0
       if (selectedElementOffsetTop < menuElementOffsetTop) {
         selectedElement.scrollIntoView()
         return
       }
       const offsetBottom =
         selectedElementOffsetTop + selectedElement.offsetHeight
-      if (offsetBottom > menuElementOffsetTop + menuElement.offsetHeight) {
+      if (
+        offsetBottom >
+        menuElementOffsetTop + (menuElement?.offsetHeight || 0)
+      ) {
         selectedElement.scrollIntoView()
       }
     },
@@ -72,7 +71,7 @@ export function useScrollableMenu(options: {
   )
 
   const handleScrollableMenuKeyDown = useCallback(
-    function (event: JSX.TargetedKeyboardEvent<HTMLElement>): void {
+    function (event: KeyboardEvent<HTMLElement>): void {
       const key = event.key
       if (key === 'ArrowDown' || key === 'ArrowUp') {
         const itemElements = getItemElements()
@@ -104,7 +103,7 @@ export function useScrollableMenu(options: {
   )
 
   const handleScrollableMenuItemMouseMove = useCallback(
-    function (event: JSX.TargetedMouseEvent<HTMLElement>): void {
+    function (event: MouseEvent<HTMLElement>): void {
       const id = event.currentTarget.getAttribute(
         itemIdDataAttributeName
       ) as string

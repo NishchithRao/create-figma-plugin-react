@@ -1,32 +1,39 @@
-import { ComponentChildren, h } from 'preact'
-import { useCallback } from 'preact/hooks'
+import {
+  ChangeEvent,
+  ChangeEventHandler,
+  KeyboardEvent,
+  MouseEvent,
+  MouseEventHandler,
+  forwardRef,
+  useCallback
+} from 'react'
 
-import { Event, EventHandler } from '../../../types/event-handler.js'
 import { FocusableComponentProps } from '../../../types/focusable-component-props.js'
-import { createClassName } from '../../../utilities/create-class-name.js'
-import { createComponent } from '../../../utilities/create-component.js'
-import { noop } from '../../../utilities/no-op.js'
-import buttonStyles from '../../button/button.module.css'
 import { LoadingIndicator } from '../../loading-indicator/loading-indicator.js'
+import buttonStyles from '../../button/button.module.css'
+import { createClassName } from '../../../utilities/create-class-name.js'
 import { fileComparator } from '../private/file-comparator.js'
 import fileUploadButtonStyles from './file-upload-button.module.css'
+import { noop } from '../../../utilities/no-op.js'
 
 export interface FileUploadButtonProps
   extends FocusableComponentProps<HTMLInputElement> {
   acceptedFileTypes?: Array<string>
-  children: ComponentChildren
+  children: React.ReactNode
   disabled?: boolean
   fullWidth?: boolean
   loading?: boolean
   multiple?: boolean
-  onChange?: EventHandler.onChange<HTMLInputElement>
-  onClick?: EventHandler.onClick<HTMLInputElement>
-  onMouseDown?: EventHandler.onMouseDown<HTMLInputElement>
-  onSelectedFiles?: EventHandler.onSelectedFiles
+  onChange?: ChangeEventHandler<HTMLInputElement>
+  onClick?: MouseEventHandler<HTMLInputElement>
+  onMouseDown?: MouseEventHandler<HTMLInputElement>
+  onSelectedFiles?: (
+    files: Array<ChangeEvent<HTMLInputElement>['target']['files']>
+  ) => void
   secondary?: boolean
 }
 
-export const FileUploadButton = createComponent<
+export const FileUploadButton = forwardRef<
   HTMLInputElement,
   FileUploadButtonProps
 >(function (
@@ -49,11 +56,11 @@ export const FileUploadButton = createComponent<
   ref
 ) {
   const handleChange = useCallback(
-    function (event: Event.onChange<HTMLInputElement>) {
+    function (event: ChangeEvent<HTMLInputElement>) {
       onChange(event)
       const fileList = event.currentTarget.files
       if (fileList === null) {
-        throw new Error('`event.currentTarget.files` is `null`')
+        console.warn('`event.currentTarget.files` is `null`')
       }
       const files = parseFileList(fileList)
       if (files.length > 0) {
@@ -64,7 +71,7 @@ export const FileUploadButton = createComponent<
   )
 
   const handleClick = useCallback(
-    function (event: Event.onClick<HTMLInputElement>) {
+    function (event: MouseEvent<HTMLInputElement>) {
       onClick(event)
       if (loading === true) {
         event.preventDefault()
@@ -74,7 +81,7 @@ export const FileUploadButton = createComponent<
   )
 
   const handleMouseDown = useCallback(
-    function (event: Event.onClick<HTMLInputElement>) {
+    function (event: MouseEvent<HTMLInputElement>) {
       onMouseDown(event)
       event.currentTarget.focus()
     },
@@ -82,7 +89,7 @@ export const FileUploadButton = createComponent<
   )
 
   const handleKeyDown = useCallback(
-    function (event: Event.onKeyDown<HTMLInputElement>) {
+    function (event: KeyboardEvent<HTMLInputElement>) {
       onKeyDown(event)
       if (event.key === 'Escape') {
         if (propagateEscapeKeyDown === false) {
@@ -96,7 +103,7 @@ export const FileUploadButton = createComponent<
 
   return (
     <div
-      class={createClassName([
+      className={createClassName([
         buttonStyles.button,
         secondary === true ? buttonStyles.secondary : buttonStyles.default,
         secondary === true
@@ -109,7 +116,7 @@ export const FileUploadButton = createComponent<
       ])}
     >
       {loading === true ? (
-        <div class={buttonStyles.loadingIndicator}>
+        <div className={buttonStyles.loadingIndicator}>
           <LoadingIndicator />
         </div>
       ) : null}
@@ -121,7 +128,7 @@ export const FileUploadButton = createComponent<
             ? undefined
             : acceptedFileTypes.join(',')
         }
-        class={fileUploadButtonStyles.input}
+        className={fileUploadButtonStyles.input}
         disabled={disabled === true}
         multiple={multiple}
         onChange={handleChange}
@@ -133,12 +140,12 @@ export const FileUploadButton = createComponent<
         type="file"
       />
       <button disabled={disabled === true} tabIndex={-1}>
-        <div class={buttonStyles.children}>{children}</div>
+        <div className={buttonStyles.children}>{children}</div>
       </button>
     </div>
   )
 })
 
-function parseFileList(fileList: FileList): Array<File> {
-  return Array.prototype.slice.call(fileList).sort(fileComparator)
+function parseFileList(fileList: FileList | null) {
+  return Array.prototype.slice.call(fileList || []).sort(fileComparator)
 }

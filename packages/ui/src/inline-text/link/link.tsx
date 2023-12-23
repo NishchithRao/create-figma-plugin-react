@@ -1,21 +1,19 @@
-import { ComponentChildren, h } from 'preact'
-import { useCallback } from 'preact/hooks'
+import { KeyboardEvent, forwardRef, useCallback } from 'react'
 
 import { Event } from '../../types/event-handler.js'
 import { FocusableComponentProps } from '../../types/focusable-component-props.js'
 import { createClassName } from '../../utilities/create-class-name.js'
-import { createComponent } from '../../utilities/create-component.js'
 import { noop } from '../../utilities/no-op.js'
 import styles from './link.module.css'
 
 export interface LinkProps extends FocusableComponentProps<HTMLAnchorElement> {
-  children: ComponentChildren
+  children: React.ReactNode
   fullWidth?: boolean
   href: string
   target?: string
 }
 
-export const Link = createComponent<HTMLAnchorElement, LinkProps>(function (
+export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function (
   {
     children,
     fullWidth = false,
@@ -28,7 +26,7 @@ export const Link = createComponent<HTMLAnchorElement, LinkProps>(function (
   ref
 ) {
   const handleKeyDown = useCallback(
-    function (event: Event.onKeyDown<HTMLAnchorElement>) {
+    function (event: KeyboardEvent<HTMLAnchorElement>) {
       onKeyDown(event)
       if (event.key === 'Escape') {
         if (propagateEscapeKeyDown === false) {
@@ -44,7 +42,7 @@ export const Link = createComponent<HTMLAnchorElement, LinkProps>(function (
     <a
       {...rest}
       ref={ref}
-      class={createClassName([
+      className={createClassName([
         styles.link,
         fullWidth === true ? styles.fullWidth : null
       ])}

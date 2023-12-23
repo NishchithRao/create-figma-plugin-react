@@ -1,10 +1,10 @@
-import { useCallback, useState } from 'preact/hooks'
-
-import { useFocusTrap } from '../use-focus-trap/use-focus-trap.js'
 import {
   InitialFocus,
   useInitialFocus
 } from '../use-initial-focus/use-initial-focus.js'
+import { useCallback, useState } from 'react'
+
+import { useFocusTrap } from '../use-focus-trap/use-focus-trap.js'
 import { useWindowKeyDown } from '../use-window-key-down.js'
 
 export function useForm<State>(
@@ -32,7 +32,8 @@ export function useForm<State>(
   const setFormState = useCallback(
     function <Name extends keyof State>(value: State[Name], name?: Name) {
       if (typeof name === 'undefined') {
-        throw new Error('`name` is `undefined`')
+        console.warn('`name` is `undefined`')
+        return
       }
       setState(function (previousState: State): State {
         const newState = {

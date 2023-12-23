@@ -1,23 +1,21 @@
-import { ComponentChildren, h } from 'preact'
-import { useCallback } from 'preact/hooks'
-
 import { Event, EventHandler } from '../../types/event-handler.js'
+import { forwardRef, useCallback } from 'react'
+
 import { FocusableComponentProps } from '../../types/focusable-component-props.js'
 import { createClassName } from '../../utilities/create-class-name.js'
-import { createComponent } from '../../utilities/create-component.js'
 import { noop } from '../../utilities/no-op.js'
 import styles from './icon-toggle-button.module.css'
 
 export interface IconToggleButtonProps
   extends FocusableComponentProps<HTMLInputElement> {
-  children: ComponentChildren
+  children: React.ReactNode
   disabled?: boolean
   onChange?: EventHandler.onChange<HTMLInputElement>
   onValueChange?: EventHandler.onValueChange<boolean>
   value: boolean
 }
 
-export const IconToggleButton = createComponent<
+export const IconToggleButton = forwardRef<
   HTMLInputElement,
   IconToggleButtonProps
 >(function (
@@ -57,7 +55,7 @@ export const IconToggleButton = createComponent<
 
   return (
     <label
-      class={createClassName([
+      className={createClassName([
         styles.iconToggleButton,
         disabled === true ? styles.disabled : null
       ])}
@@ -66,15 +64,15 @@ export const IconToggleButton = createComponent<
         {...rest}
         ref={ref}
         checked={value === true}
-        class={styles.input}
+        className={styles.input}
         disabled={disabled === true}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         tabIndex={0}
         type="checkbox"
       />
-      <div class={styles.box}>
-        <div class={styles.icon}>{children}</div>
+      <div className={styles.box}>
+        <div className={styles.icon}>{children}</div>
       </div>
     </label>
   )

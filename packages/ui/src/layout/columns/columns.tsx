@@ -1,17 +1,16 @@
-import { ComponentChild, h, toChildArray } from 'preact'
+import { Children, forwardRef } from 'react'
 
 import { Space } from '../../types/space.js'
 import { createClassName } from '../../utilities/create-class-name.js'
-import { createComponent } from '../../utilities/create-component.js'
 import styles from './columns.module.css'
 
 export type ColumnsProps = {
-  children: ComponentChild
+  children: React.ReactElement
   space?: ColumnsSpace
 }
 export type ColumnsSpace = Space
 
-export const Columns = createComponent<HTMLDivElement, ColumnsProps>(function (
+export const Columns = forwardRef<HTMLDivElement, ColumnsProps>(function (
   { children, space, ...rest },
   ref
 ) {
@@ -19,21 +18,21 @@ export const Columns = createComponent<HTMLDivElement, ColumnsProps>(function (
     <div
       {...rest}
       ref={ref}
-      class={createClassName([
+      className={createClassName([
         styles.columns,
         typeof space === 'undefined' ? null : styles[space]
       ])}
     >
-      {toChildArray(children).map(function (
-        element: ComponentChild,
-        index: number
-      ) {
-        return (
-          <div key={index} class={styles.child}>
-            {element}
-          </div>
-        )
-      })}
+      {Children.map(
+        children,
+        function (element: React.ReactElement, index: number) {
+          return (
+            <div key={index} className={styles.child}>
+              {element}
+            </div>
+          )
+        }
+      )}
     </div>
   )
 })

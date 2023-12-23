@@ -1,18 +1,16 @@
-import { MIXED_NUMBER, MIXED_STRING } from '@create-figma-plugin/utilities'
-import { h, RefObject } from 'preact'
-import { useCallback, useRef, useState } from 'preact/hooks'
-
 import { Event, EventHandler } from '../../../types/event-handler.js'
+import { MIXED_NUMBER, MIXED_STRING } from '@create-figma-plugin/utilities'
+import { forwardRef, useCallback, useRef, useState } from 'react'
+
 import { RGBA } from '../../../types/rgba.js'
+import { RawTextboxNumeric } from '../textbox-numeric/private/raw-textbox-numeric.js'
 import { createClassName } from '../../../utilities/create-class-name.js'
-import { createComponent } from '../../../utilities/create-component.js'
+import { createRgbaColor } from './private/create-rgba-color.js'
 import { getCurrentFromRef } from '../../../utilities/get-current-from-ref.js'
 import { noop } from '../../../utilities/no-op.js'
-import { RawTextboxNumeric } from '../textbox-numeric/private/raw-textbox-numeric.js'
-import { createRgbaColor } from './private/create-rgba-color.js'
 import { normalizeUserInputColor } from './private/normalize-hex-color.js'
-import { updateHexColor } from './private/update-hex-color.js'
 import styles from './textbox-color.module.css'
+import { updateHexColor } from './private/update-hex-color.js'
 
 const EMPTY_STRING = ''
 
@@ -36,7 +34,7 @@ export type TextboxColorProps = {
 }
 export type TextboxColorVariant = 'border' | 'underline'
 
-export const TextboxColor = createComponent<HTMLDivElement, TextboxColorProps>(
+export const TextboxColor = forwardRef<HTMLDivElement, TextboxColorProps>(
   function (
     {
       disabled = false,
@@ -59,14 +57,18 @@ export const TextboxColor = createComponent<HTMLDivElement, TextboxColorProps>(
     },
     ref
   ) {
-    const hexColorInputElementRef: RefObject<HTMLInputElement> = useRef(null)
-    const opacityInputElementRef: RefObject<HTMLInputElement> = useRef(null)
-    const revertOnEscapeKeyDownRef: RefObject<boolean> = useRef(false) // Set to `true` when the `Escape` key is pressed; used to bail out of `handleHexColorBlur`
+    const hexColorInputElementRef = useRef<HTMLInputElement>(null)
+    const opacityInputElementRef = useRef<HTMLInputElement>(null)
+    const revertOnEscapeKeyDownRef = useRef(false) // Set to `true` when the `Escape` key is pressed; used to bail out of `handleHexColorBlur`
 
     const [originalHexColor, setOriginalHexColor] = useState(EMPTY_STRING) // Value of the hex color textbox when it was initially focused
 
-    const setHexColorInputElementValue = useCallback(function (value: string) {
+    const setHexColorInputElementValue = useCallback(function (
+      value: string | null
+    ) {
+      if (!value) return
       const inputElement = getCurrentFromRef(hexColorInputElementRef)
+      if (!inputElement) return
       inputElement.value = value
       const inputEvent = new window.Event('input', {
         bubbles: true,
@@ -265,7 +267,7 @@ export const TextboxColor = createComponent<HTMLDivElement, TextboxColorProps>(
     return (
       <div
         ref={ref}
-        class={createClassName([
+        className={createClassName([
           styles.textboxColor,
           typeof variant === 'undefined'
             ? null
@@ -275,9 +277,9 @@ export const TextboxColor = createComponent<HTMLDivElement, TextboxColorProps>(
           disabled === true ? styles.disabled : null
         ])}
       >
-        <div class={styles.color}>
+        <div className={styles.color}>
           <div
-            class={styles.colorFill}
+            className={styles.colorFill}
             style={
               isHexColorValid === true
                 ? { backgroundColor: `#${renderedHexColor}` }
@@ -286,7 +288,7 @@ export const TextboxColor = createComponent<HTMLDivElement, TextboxColorProps>(
           ></div>
           {parsedOpacity === 1 ? null : (
             <div
-              class={styles.colorFill}
+              className={styles.colorFill}
               style={
                 isHexColorValid === true
                   ? {
@@ -297,10 +299,10 @@ export const TextboxColor = createComponent<HTMLDivElement, TextboxColorProps>(
               }
             ></div>
           )}
-          <div class={styles.colorBorder} />
+          <div className={styles.colorBorder} />
         </div>
         <input
-          class={styles.hexColorSelector}
+          className={styles.hexColorSelector}
           disabled={disabled === true}
           onFocus={handleHexColorSelectorFocus}
           onInput={handleHexColorSelectorInput}
@@ -312,7 +314,7 @@ export const TextboxColor = createComponent<HTMLDivElement, TextboxColorProps>(
         <input
           {...rest}
           ref={hexColorInputElementRef}
-          class={createClassName([styles.input, styles.hexColorInput])}
+          className={createClassName([styles.input, styles.hexColorInput])}
           disabled={disabled === true}
           onBlur={handleHexColorBlur}
           onFocus={handleHexColorFocus}
@@ -320,14 +322,14 @@ export const TextboxColor = createComponent<HTMLDivElement, TextboxColorProps>(
           onKeyDown={handleHexColorKeyDown}
           onMouseUp={handleHexColorMouseUp}
           placeholder={hexColorPlaceholder}
-          spellcheck={false}
+          spellCheck={false}
           tabIndex={0}
           type="text"
           value={hexColor === MIXED_STRING ? 'Mixed' : hexColor}
         />
         <RawTextboxNumeric
           ref={opacityInputElementRef}
-          class={createClassName([styles.input, styles.opacityInput])}
+          className={createClassName([styles.input, styles.opacityInput])}
           disabled={disabled === true}
           maximum={100}
           minimum={0}
@@ -342,9 +344,9 @@ export const TextboxColor = createComponent<HTMLDivElement, TextboxColorProps>(
           validateOnBlur={validateOpacityOnBlur}
           value={opacity}
         />
-        <div class={styles.divider} />
-        <div class={styles.border} />
-        {variant === 'underline' ? <div class={styles.underline} /> : null}
+        <div className={styles.divider} />
+        <div className={styles.border} />
+        {variant === 'underline' ? <div className={styles.underline} /> : null}
       </div>
     )
   }

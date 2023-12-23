@@ -1,20 +1,18 @@
-import { ComponentChildren, h } from 'preact'
-import { useCallback } from 'preact/hooks'
-
 import { Event, EventHandler } from '../../types/event-handler.js'
+import { forwardRef, useCallback } from 'react'
+
 import { FocusableComponentProps } from '../../types/focusable-component-props.js'
-import { createComponent } from '../../utilities/create-component.js'
 import { noop } from '../../utilities/no-op.js'
 import styles from './icon-button.module.css'
 
 export interface IconButtonProps
   extends FocusableComponentProps<HTMLButtonElement> {
-  children: ComponentChildren
+  children: React.ReactNode
   disabled?: boolean
   onClick?: EventHandler.onClick<HTMLButtonElement>
 }
 
-export const IconButton = createComponent<HTMLButtonElement, IconButtonProps>(
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   function (
     {
       children,
@@ -43,13 +41,13 @@ export const IconButton = createComponent<HTMLButtonElement, IconButtonProps>(
       <button
         {...rest}
         ref={ref}
-        class={styles.iconButton}
+        className={styles.iconButton}
         disabled={disabled === true}
         onClick={onClick}
         onKeyDown={handleKeyDown}
         tabIndex={0}
       >
-        <div class={styles.icon}>{children}</div>
+        <div className={styles.icon}>{children}</div>
       </button>
     )
   }

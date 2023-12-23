@@ -1,18 +1,16 @@
-import { ComponentChildren, h } from 'preact'
-
-import { createComponent } from '../../utilities/create-component.js'
+import { forwardRef } from 'react'
 import styles from './bold.module.css'
 
 export type BoldProps = {
-  children: ComponentChildren
+  children: React.ReactNode
 }
 
-export const Bold = createComponent<HTMLSpanElement, BoldProps>(function (
+export const Bold = forwardRef<HTMLSpanElement, BoldProps>(function (
   { children, ...rest },
   ref
 ) {
   return (
-    <strong {...rest} ref={ref} class={styles.bold}>
+    <strong {...rest} ref={ref} className={styles.bold}>
       {children}
     </strong>
   )

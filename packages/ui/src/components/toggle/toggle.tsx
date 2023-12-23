@@ -1,22 +1,20 @@
-import { ComponentChildren, h } from 'preact'
-import { useCallback } from 'preact/hooks'
-
 import { Event, EventHandler } from '../../types/event-handler.js'
+import { forwardRef, useCallback } from 'react'
+
 import { FocusableComponentProps } from '../../types/focusable-component-props.js'
 import { createClassName } from '../../utilities/create-class-name.js'
-import { createComponent } from '../../utilities/create-component.js'
 import { noop } from '../../utilities/no-op.js'
 import styles from './toggle.module.css'
 
 export interface ToggleProps extends FocusableComponentProps<HTMLInputElement> {
-  children: ComponentChildren
+  children: React.ReactNode
   disabled?: boolean
   onChange?: EventHandler.onChange<HTMLInputElement>
   onValueChange?: EventHandler.onValueChange<boolean>
   value: boolean
 }
 
-export const Toggle = createComponent<HTMLInputElement, ToggleProps>(function ({
+export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(function ({
   children,
   disabled = false,
   onChange = noop,
@@ -50,7 +48,7 @@ export const Toggle = createComponent<HTMLInputElement, ToggleProps>(function ({
 
   return (
     <label
-      class={createClassName([
+      className={createClassName([
         styles.toggle,
         disabled === true ? styles.disabled : null
       ])}
@@ -58,16 +56,16 @@ export const Toggle = createComponent<HTMLInputElement, ToggleProps>(function ({
       <input
         {...rest}
         checked={value === true}
-        class={styles.input}
+        className={styles.input}
         disabled={disabled === true}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         tabIndex={0}
         type="checkbox"
       />
-      <div class={styles.box} />
-      <div class={styles.switch} />
-      <div class={styles.children}>{children}</div>
+      <div className={styles.box} />
+      <div className={styles.switch} />
+      <div className={styles.children}>{children}</div>
     </label>
   )
 })

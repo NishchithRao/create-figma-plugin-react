@@ -3,13 +3,15 @@ import {
   ITEM_ID_DATA_ATTRIBUTE_NAME,
   VIEWPORT_MARGIN
 } from '../../../utilities/private/constants.js'
+
 import { Id } from './types.js'
 
 export function updateMenuElementLayout(
-  rootElement: HTMLDivElement,
-  menuElement: HTMLDivElement,
+  rootElement: HTMLDivElement | null,
+  menuElement: HTMLDivElement | null,
   selectedId: Id
 ) {
+  if (!rootElement || !menuElement) return
   const rootElementBoundingClientRect = rootElement.getBoundingClientRect()
   const rootWidth = rootElement.offsetWidth
   const rootHeight = rootElement.offsetHeight
@@ -42,7 +44,7 @@ export function updateMenuElementLayout(
   const top = computeTop({
     menuHeight,
     rootTop,
-    selectedTop: labelElement.offsetTop
+    selectedTop: labelElement?.offsetTop || 0
   })
   menuElement.style.top = `${top}px`
 
@@ -56,25 +58,27 @@ export function updateMenuElementLayout(
     menuScrollHeight,
     rootHeight,
     rootTop,
-    selectedTop: labelElement.offsetTop
+    selectedTop: labelElement?.offsetTop || 0
   })
 }
 
 function getSelectedLabelElement(
   menuElement: HTMLDivElement,
   selectedId: Id
-): HTMLLabelElement {
+): HTMLLabelElement | null {
   const inputElement = menuElement.querySelector<HTMLInputElement>(
     selectedId === INVALID_ID
       ? `[${ITEM_ID_DATA_ATTRIBUTE_NAME}]`
       : `[${ITEM_ID_DATA_ATTRIBUTE_NAME}='${selectedId}']`
   )
   if (inputElement === null) {
-    throw new Error('`inputElement` is `null`')
+    console.warn('`inputElement` is `null`')
+    return null
   }
+
   const labelElement = inputElement.parentElement
   if (labelElement === null) {
-    throw new Error('`labelElement` is `null`')
+    console.warn('`labelElement` is `null`')
   }
   return labelElement as HTMLLabelElement
 }

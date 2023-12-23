@@ -1,20 +1,24 @@
-import {
-  evaluateNumericExpression,
-  isValidNumericInput,
-  MIXED_NUMBER,
-  MIXED_STRING
-} from '@create-figma-plugin/utilities'
-import { h, RefObject } from 'preact'
-import { useCallback, useRef, useState } from 'preact/hooks'
-
 import { Event, EventHandler } from '../../../../types/event-handler.js'
+import {
+  MIXED_NUMBER,
+  MIXED_STRING,
+  evaluateNumericExpression,
+  isValidNumericInput
+} from '@create-figma-plugin/utilities'
+import {
+  MutableRefObject,
+  forwardRef,
+  useCallback,
+  useRef,
+  useState
+} from 'react'
+
 import { FocusableComponentProps } from '../../../../types/focusable-component-props.js'
-import { createComponent } from '../../../../utilities/create-component.js'
-import { getCurrentFromRef } from '../../../../utilities/get-current-from-ref.js'
-import { noop } from '../../../../utilities/no-op.js'
 import { computeNextValue } from '../../private/compute-next-value.js'
-import { isKeyCodeCharacterGenerating } from '../../private/is-keycode-character-generating.js'
 import { formatEvaluatedValue } from './format-evaluated-value.js'
+import { getCurrentFromRef } from '../../../../utilities/get-current-from-ref.js'
+import { isKeyCodeCharacterGenerating } from '../../private/is-keycode-character-generating.js'
+import { noop } from '../../../../utilities/no-op.js'
 
 const FRACTION_DIGITS = 3
 const EMPTY_STRING = ''
@@ -38,9 +42,10 @@ export interface RawTextboxNumericProps
   suffix?: string
   validateOnBlur?: (value: null | number) => null | number | boolean
   value: string
+  className?: string
 }
 
-export const RawTextboxNumeric = createComponent<
+export const RawTextboxNumeric = forwardRef<
   HTMLInputElement,
   RawTextboxNumericProps
 >(function (
@@ -73,16 +78,18 @@ export const RawTextboxNumeric = createComponent<
     typeof maximum !== 'undefined' &&
     minimum >= maximum
   ) {
-    throw new Error('`minimum` must be less than `maximum`')
+    console.warn('`minimum` must be less than `maximum`')
   }
 
-  const inputElementRef: RefObject<HTMLInputElement> = useRef(null)
-  const revertOnEscapeKeyDownRef: RefObject<boolean> = useRef(false) // Set to `true` when the `Escape` key is pressed; used to bail out of `handleBlur`
+  const inputElementRef: MutableRefObject<HTMLInputElement | null> =
+    useRef<HTMLInputElement>(null)
+  const revertOnEscapeKeyDownRef = useRef(false) // Set to `true` when the `Escape` key is pressed; used to bail out of `handleBlur`
 
   const [originalValue, setOriginalValue] = useState(EMPTY_STRING) // Value of the textbox when it was initially focused
 
   const setInputElementValue = useCallback(function (value: string) {
     const inputElement = getCurrentFromRef(inputElementRef)
+    if (!inputElement) return
     inputElement.value = value
     const inputEvent = new window.Event('input', {
       bubbles: true,
@@ -208,7 +215,7 @@ export const RawTextboxNumeric = createComponent<
         }
         const number = evaluateValue(value, suffix)
         if (number === null) {
-          throw new Error('`number` is `null`')
+          console.warn('`number` is `null`')
         }
         const evaluatedValue = evaluateValueWithDelta(
           number,
@@ -290,7 +297,7 @@ export const RawTextboxNumeric = createComponent<
   const handlePaste = useCallback(
     function (event: Event.onPaste<HTMLInputElement>) {
       if (event.clipboardData === null) {
-        throw new Error('`event.clipboardData` is `null`')
+        console.warn('`event.clipboardData` is `null`')
       }
       const nextValue = trimSuffix(
         computeNextValue(
@@ -337,7 +344,7 @@ export const RawTextboxNumeric = createComponent<
       onMouseDown={handleMouseDown}
       onPaste={handlePaste}
       placeholder={placeholder}
-      spellcheck={false}
+      spellCheck={false}
       tabIndex={0}
       type="text"
       value={value === MIXED_STRING ? 'Mixed' : value}
@@ -372,8 +379,11 @@ function evaluateValue(value: string, suffix?: string): null | number {
   return evaluateNumericExpression(trimSuffix(value, suffix))
 }
 
-function evaluateValueWithDelta(value: number, delta: number): number {
-  return parseFloat((value + delta).toFixed(FRACTION_DIGITS))
+function evaluateValueWithDelta(
+  value: number | null = 0,
+  delta: number
+): number {
+  return parseFloat(((value || 0) + delta).toFixed(FRACTION_DIGITS))
 }
 
 function trimSuffix(string: string, suffix?: string): string {

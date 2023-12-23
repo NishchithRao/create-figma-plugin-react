@@ -1,26 +1,28 @@
-import { ComponentChildren, h } from 'preact'
-import { useCallback } from 'preact/hooks'
+import {
+  KeyboardEvent,
+  MouseEventHandler,
+  forwardRef,
+  useCallback
+} from 'react'
 
-import { Event, EventHandler } from '../../types/event-handler.js'
 import { FocusableComponentProps } from '../../types/focusable-component-props.js'
-import { createClassName } from '../../utilities/create-class-name.js'
-import { createComponent } from '../../utilities/create-component.js'
-import { noop } from '../../utilities/no-op.js'
 import { LoadingIndicator } from '../loading-indicator/loading-indicator.js'
+import { createClassName } from '../../utilities/create-class-name.js'
+import { noop } from '../../utilities/no-op.js'
 import styles from './button.module.css'
 
 export interface ButtonProps
   extends FocusableComponentProps<HTMLButtonElement> {
-  children: ComponentChildren
+  children: React.ReactNode
   danger?: boolean
   disabled?: boolean
   fullWidth?: boolean
   loading?: boolean
-  onClick?: EventHandler.onClick<HTMLButtonElement>
+  onClick?: MouseEventHandler<HTMLButtonElement>
   secondary?: boolean
 }
 
-export const Button = createComponent<HTMLButtonElement, ButtonProps>(function (
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function (
   {
     children,
     danger = false,
@@ -36,7 +38,7 @@ export const Button = createComponent<HTMLButtonElement, ButtonProps>(function (
   ref
 ) {
   const handleKeyDown = useCallback(
-    function (event: Event.onKeyDown<HTMLButtonElement>) {
+    function (event: KeyboardEvent<HTMLButtonElement>) {
       onKeyDown(event)
       if (event.key === 'Escape') {
         if (propagateEscapeKeyDown === false) {
@@ -50,7 +52,7 @@ export const Button = createComponent<HTMLButtonElement, ButtonProps>(function (
 
   return (
     <div
-      class={createClassName([
+      className={createClassName([
         styles.button,
         secondary === true ? styles.secondary : styles.default,
         danger === true ? styles.danger : null,
@@ -60,7 +62,7 @@ export const Button = createComponent<HTMLButtonElement, ButtonProps>(function (
       ])}
     >
       {loading === true ? (
-        <div class={styles.loadingIndicator}>
+        <div className={styles.loadingIndicator}>
           <LoadingIndicator />
         </div>
       ) : null}
@@ -72,7 +74,7 @@ export const Button = createComponent<HTMLButtonElement, ButtonProps>(function (
         onKeyDown={handleKeyDown}
         tabIndex={0}
       >
-        <div class={styles.children}>{children}</div>
+        <div className={styles.children}>{children}</div>
       </button>
     </div>
   )

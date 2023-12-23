@@ -3,10 +3,11 @@ import {
   convertRgbColorToHexColor
 } from '@create-figma-plugin/utilities'
 
-export function updateHexColor(hexColor: string, delta: number): string {
+export function updateHexColor(hexColor: string, delta: number): string | null {
   const rgbColor = convertHexColorToRgbColor(hexColor)
   if (rgbColor === null) {
-    throw new Error('Invalid `hexColor`')
+    console.warn('Invalid `hexColor`')
+    return null
   }
   const { r, g, b } = rgbColor
   const result = convertRgbColorToHexColor({
@@ -15,7 +16,7 @@ export function updateHexColor(hexColor: string, delta: number): string {
     r: updateValue(r, delta)
   })
   if (result === null) {
-    throw new Error('Invalid `rgbColor`')
+    console.warn('Invalid `rgbColor`')
   }
   return result
 }

@@ -1,4 +1,4 @@
-import { useEffect } from 'preact/hooks'
+import { useEffect } from 'react'
 
 const INITIAL_FOCUS_DATA_ATTRIBUTE_NAME = 'data-initial-focus'
 
@@ -12,7 +12,7 @@ export function useInitialFocus(): InitialFocus {
       `[${INITIAL_FOCUS_DATA_ATTRIBUTE_NAME}]:not([tabindex="-1"]`
     )
     if (focusableElements.length === 0) {
-      throw new Error(
+      console.warn(
         `No element with attribute \`${INITIAL_FOCUS_DATA_ATTRIBUTE_NAME}\``
       )
     }

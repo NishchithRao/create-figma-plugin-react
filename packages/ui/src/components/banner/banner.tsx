@@ -1,17 +1,15 @@
-import { ComponentChildren, h } from 'preact'
-
 import { createClassName } from '../../utilities/create-class-name.js'
-import { createComponent } from '../../utilities/create-component.js'
+import { forwardRef } from 'react'
 import styles from './banner.module.css'
 
 export type BannerProps = {
-  children: ComponentChildren
-  icon: ComponentChildren
+  children: React.ReactNode
+  icon: React.ReactNode
   variant?: BannerVariant
 }
 export type BannerVariant = 'success' | 'warning'
 
-export const Banner = createComponent<HTMLDivElement, BannerProps>(function (
+export const Banner = forwardRef<HTMLDivElement, BannerProps>(function (
   { children, icon, variant, ...rest },
   ref
 ) {
@@ -19,13 +17,13 @@ export const Banner = createComponent<HTMLDivElement, BannerProps>(function (
     <div
       {...rest}
       ref={ref}
-      class={createClassName([
+      className={createClassName([
         styles.banner,
         typeof variant === 'undefined' ? null : styles[variant]
       ])}
     >
-      <div class={styles.icon}>{icon}</div>
-      <div class={styles.children}>{children}</div>
+      <div className={styles.icon}>{icon}</div>
+      <div className={styles.children}>{children}</div>
     </div>
   )
 })
